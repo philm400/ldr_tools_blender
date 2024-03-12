@@ -60,7 +60,7 @@ class Preferences():
         self.ldraw_path = find_ldraw_library()
         self.instance_type = 'LinkedDuplicates'
         self.additional_paths = []
-        self.add_gap_between_parts = True
+        self.add_gap_between_parts = False
 
     def from_dict(self, dict: dict[str, Any]):
         # Fill in defaults for any missing values.
