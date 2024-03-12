@@ -14,3 +14,5 @@ pyo3-build-config = "0.18.1"
 [lib]
 name = "ldr_tools_py"
 crate-type = ["cdylib"]
+
+# PYO3_PYTHON="/Applications/Blender.app/Contents/Resources/4.0/python/bin/python3.10" cargo build --release

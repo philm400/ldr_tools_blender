@@ -1,5 +1,7 @@
+/Addon Packages
 /target
 /Cargo.lock
 
 *.bat
 *.sh
+*.DS_Store

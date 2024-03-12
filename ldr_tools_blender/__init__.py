@@ -4,13 +4,11 @@ from . import operator
 bl_info = {
     "name": "ldr_tools_blender",
     "description": "Import LDraw models in .mpd .ldr, and .dat formats",
-    "author": "ScanMountGoat (SMG)",
-    "version": (0, 3, 0),
+    "author": "ScanMountGoat (SMG) & Philm400",
+    "version": (0, 3, 1),
     "blender": (4, 0, 0),
     "location": "File > Import",
     "warning": "",
-    "doc_url": "https://github.com/ScanMountGoat/ldr_tools_blender/wiki",
-    "tracker_url": "https://github.com/ScanMountGoat/ldr_tools_blender/issues",
     "category": "Import-Export"
 }
 
