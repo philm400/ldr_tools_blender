@@ -188,8 +188,16 @@ class ImportOperator(bpy.types.Operator, ImportHelper):
 
         import time
         start = time.time()
-        import_ldraw(self, self.filepath, self.ldraw_path, ImportOperator.preferences.additional_paths,
-                     self.instance_type, self.add_gap_between_parts)
+        import_ldraw(
+            self,
+            self.filepath,
+            self.ldraw_path,
+            ImportOperator.preferences.additional_paths,
+            self.instance_type,
+            self.add_gap_between_parts,
+            "High",
+            "High"
+        )
         end = time.time()
         print(f'Import: {end - start}')
 

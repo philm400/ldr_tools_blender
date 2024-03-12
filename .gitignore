@@ -1,6 +1,7 @@
 /Addon Packages
 /target
 /Cargo.lock
+/ldr_tools_blender/ldr_tools_py.so
 
 *.bat
 *.sh

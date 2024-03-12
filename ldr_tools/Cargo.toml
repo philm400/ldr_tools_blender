@@ -5,6 +5,7 @@ edition = "2021"
 
 [dependencies]
 glam = "0.25.0"
+pyo3 = { version = "0.20.3", features = ["extension-module"] }
 weldr = { git = "https://github.com/ScanMountGoat/weldr", rev = "647eaea" }
 rstar = "0.10.0"
 rayon = "1.7.0"

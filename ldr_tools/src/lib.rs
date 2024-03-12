@@ -2,11 +2,12 @@ use std::{
     collections::HashMap,
     path::{Path, PathBuf},
 };
-
 use geometry::create_geometry;
 use glam::{vec4, Mat4, Vec3};
 use rayon::prelude::*;
 use weldr::{Command, FileRefResolver, ResolveError};
+
+use pyo3::prelude::*;
 
 pub use color::{load_color_table, LDrawColor};
 pub use geometry::LDrawGeometry;
@@ -56,6 +57,7 @@ impl DiskResolver {
             catalog_path.join("UnOfficial").join("parts").join("s"),
             // TODO: How to handle the case where subfiles can be in the same directory as the current file?
         ];
+        println!("Mesh Resolution {:?}", resolution);
         // Insert at the front since earlier elements take priority.
         match resolution {
             PrimitiveResolution::Low => base_paths.insert(0, catalog_path.join("p").join("8")),
@@ -121,6 +123,7 @@ pub struct PointInstances {
 }
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
+#[pyclass(get_all, set_all)]
 pub enum StudType {
     /// Removes all visible and internal studs.
     Disabled,
@@ -134,11 +137,12 @@ pub enum StudType {
 
 impl Default for StudType {
     fn default() -> Self {
-        Self::Normal
+        Self::Disabled
     }
 }
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
+#[pyclass(get_all, set_all)]
 pub enum PrimitiveResolution {
     /// Primitives in the `p/8` folder.
     Low,
@@ -150,13 +154,15 @@ pub enum PrimitiveResolution {
 
 impl Default for PrimitiveResolution {
     fn default() -> Self {
-        Self::Normal
+        Self::High
     }
 }
 
 // TODO: Come up with a better name.
 #[derive(Debug)]
 pub struct GeometrySettings {
+    pub import_resolution: String,
+    pub import_stud_type: String,
     pub triangulate: bool,
     pub add_gap_between_parts: bool,
     // TODO: Create an enum for different stud types.
@@ -169,6 +175,8 @@ pub struct GeometrySettings {
 impl Default for GeometrySettings {
     fn default() -> Self {
         Self {
+            import_resolution: Default::default(),
+            import_stud_type: Default::default(),
             triangulate: Default::default(),
             add_gap_between_parts: Default::default(),
             stud_type: Default::default(),
@@ -242,8 +250,13 @@ fn parse_file(
     );
     let mut source_map = weldr::SourceMap::new();
     ensure_studs(settings, &resolver, &mut source_map);
+    
+    println!("1- Stud Type {:?}", settings.stud_type);
 
     let main_model_name = weldr::parse(path, &resolver, &mut source_map).unwrap();
+    let mut parts = main_model_name.rsplit("/");
+    let fname = parts.next().unwrap_or("");
+    println!("1- Model Name: {:?}", fname);
     (source_map, main_model_name)
 }
 
@@ -252,11 +265,22 @@ fn ensure_studs(
     resolver: &DiskResolver,
     source_map: &mut weldr::SourceMap,
 ) {
+
+    println!("2- Stud Type {:?}", settings.stud_type);
     // The replaced studs likely won't be referenced by existing files.
     // Make sure the selected stud type is in the source map.
     if settings.stud_type == StudType::Logo4 {
         weldr::parse("stud-logo4.dat", resolver, source_map).unwrap();
         weldr::parse("stud2-logo4.dat", resolver, source_map).unwrap();
+    } else if settings.stud_type == StudType::Normal {
+        weldr::parse("stud-logo2.dat", resolver, source_map).unwrap();
+        weldr::parse("stud2-logo2.dat", resolver, source_map).unwrap();
+    } else if settings.stud_type == StudType::HighContrast {
+        weldr::parse("stud-high-contrast.dat", resolver, source_map).unwrap();
+        weldr::parse("stud-high-contrast2.dat", resolver, source_map).unwrap();
+    } else {
+        weldr::parse("stud.dat", resolver, source_map).unwrap();
+        weldr::parse("stud2.dat", resolver, source_map).unwrap();
     }
 }
 

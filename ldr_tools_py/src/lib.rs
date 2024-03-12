@@ -1,6 +1,5 @@
 use std::collections::HashMap;
 
-use ldr_tools::StudType;
 use numpy::IntoPyArray;
 use pyo3::prelude::*;
 
@@ -114,9 +113,12 @@ impl From<ldr_tools::LDrawColor> for LDrawColor {
 #[pyclass(get_all, set_all)]
 #[derive(Debug, Clone)]
 pub struct GeometrySettings {
+    import_resolution: String,
+    import_stud_type: String,
     triangulate: bool,
     add_gap_between_parts: bool,
-    logo_on_studs: bool,
+    stud_type: ldr_tools::StudType,
+    primitive_resolution: ldr_tools::PrimitiveResolution,
     weld_vertices: bool,
     scene_scale: f32,
 }
@@ -132,27 +134,41 @@ impl GeometrySettings {
 impl From<ldr_tools::GeometrySettings> for GeometrySettings {
     fn from(value: ldr_tools::GeometrySettings) -> Self {
         Self {
+            import_resolution: value.import_resolution,
+            import_stud_type: value.import_stud_type,
             triangulate: value.triangulate,
             add_gap_between_parts: value.add_gap_between_parts,
-            logo_on_studs: value.stud_type == StudType::Logo4,
+            stud_type: value.stud_type,
+            primitive_resolution: value.primitive_resolution,
             weld_vertices: value.weld_vertices,
             scene_scale: value.scene_scale,
         }
     }
 }
-
 impl From<&GeometrySettings> for ldr_tools::GeometrySettings {
     fn from(value: &GeometrySettings) -> Self {
         Self {
+            import_resolution: value.import_resolution.clone(),
+            import_stud_type: value.import_stud_type.clone(),
             triangulate: value.triangulate,
             add_gap_between_parts: value.add_gap_between_parts,
-            stud_type: if value.logo_on_studs {
-                StudType::Logo4
+            stud_type: if value.import_stud_type == "Low" {
+                ldr_tools::StudType::Normal
+            } else if value.import_stud_type == "High" {
+                ldr_tools::StudType::Logo4
+            } else if value.import_stud_type == "Contrast" {
+                ldr_tools::StudType::HighContrast
             } else {
-                StudType::Normal
+                ldr_tools::StudType::Disabled
             },
             weld_vertices: value.weld_vertices,
-            primitive_resolution: ldr_tools::PrimitiveResolution::Normal,
+            primitive_resolution: if value.import_resolution == "Low" {
+                ldr_tools::PrimitiveResolution::Low
+            } else if value.import_resolution == "High" {
+                ldr_tools::PrimitiveResolution::High
+            } else {
+                ldr_tools::PrimitiveResolution::Normal
+            },
             scene_scale: value.scene_scale,
         }
     }
