@@ -361,22 +361,30 @@ fn append_geometry(
 fn replace_studs(subfile_cmd: &weldr::SubFileRefCmd, stud_type: StudType) -> &str {
     // https://wiki.ldraw.org/wiki/Studs_with_Logos
     match stud_type {
-        StudType::Disabled => {
-            if is_stud(&subfile_cmd.file) {
-                // TODO: is there a better way to empty out files?
-                ""
-            } else {
-                subfile_cmd.file.as_str()
-            }
-        }
-        StudType::Normal => &subfile_cmd.file,
+        StudType::Disabled => match subfile_cmd.file.as_str() {
+            "stud.dat" => "stud-logo.dat",
+            "stud2.dat" => "stud2-logo.dat",
+            "stud20.dat" => "stud20-logo.dat",
+            _ => subfile_cmd.file.as_str(),
+        },
+        StudType::Normal => match subfile_cmd.file.as_str() {
+            "stud.dat" => "stud-logo3.dat",
+            "stud2.dat" => "stud2-logo3.dat",
+            "stud20.dat" => "stud20-logo3.dat",
+            _ => subfile_cmd.file.as_str(),
+        },
         StudType::Logo4 => match subfile_cmd.file.as_str() {
             "stud.dat" => "stud-logo4.dat",
             "stud2.dat" => "stud2-logo4.dat",
             "stud20.dat" => "stud20-logo4.dat",
             _ => subfile_cmd.file.as_str(),
         },
-        StudType::HighContrast => &subfile_cmd.file,
+        StudType::HighContrast => match subfile_cmd.file.as_str() {
+            "stud.dat" => "stud-high-contrast.dat",
+            "stud2.dat" => "stud2-high-contrast.dat",
+            "stud20.dat" => "stud20-high-contrast.dat",
+            _ => subfile_cmd.file.as_str(),
+        }
     }
 }
 

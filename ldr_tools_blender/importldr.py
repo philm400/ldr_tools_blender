@@ -3,6 +3,7 @@ import numpy as np
 import mathutils
 import math
 import bmesh
+import os
 
 # TODO: Create a pyi type stub file?
 from . import ldr_tools_py
@@ -55,6 +56,10 @@ def import_objects(filepath: str, ldraw_path: str, additional_paths: list[str], 
 
     root_obj = add_nodes(scene.root_node, scene.geometry_cache,
                          blender_mesh_cache, color_by_code)
+    
+    o_name = os.path.split(filepath)
+    root_obj.name = o_name[1]
+
     # Account for Blender having a different coordinate system.
     # Apply a scene scale to match the previous version.
     # TODO: make scene scale configurable.
@@ -311,7 +316,7 @@ def create_mesh_from_geometry(name: str, geometry: LDrawGeometry):
 
         # Enable autosmooth to handle some cases where edges aren't split.
         mesh.use_auto_smooth = True
-        mesh.auto_smooth_angle = math.radians(89.0)
+        mesh.auto_smooth_angle = math.radians(30.0)
         mesh.polygons.foreach_set('use_smooth', [True] * len(mesh.polygons))
 
         # Add attributes needed to render grainy slopes properly.

@@ -152,7 +152,7 @@ impl From<&GeometrySettings> for ldr_tools::GeometrySettings {
             import_stud_type: value.import_stud_type.clone(),
             triangulate: value.triangulate,
             add_gap_between_parts: value.add_gap_between_parts,
-            stud_type: if value.import_stud_type == "Low" {
+            stud_type: if value.import_stud_type == "Normal" {
                 ldr_tools::StudType::Normal
             } else if value.import_stud_type == "High" {
                 ldr_tools::StudType::Logo4

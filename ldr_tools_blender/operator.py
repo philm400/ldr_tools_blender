@@ -61,6 +61,8 @@ class Preferences():
         self.instance_type = 'LinkedDuplicates'
         self.additional_paths = []
         self.add_gap_between_parts = True
+        self.resolution = 'Normal'
+        self.stud_logo = 'Normal'
 
     def from_dict(self, dict: dict[str, Any]):
         # Fill in defaults for any missing values.
@@ -72,6 +74,10 @@ class Preferences():
             'additional_paths', defaults.additional_paths)
         self.add_gap_between_parts = dict.get(
             'add_gap_between_parts', defaults.add_gap_between_parts)
+        self.resolution = dict.get(
+            'resolution', defaults.resolution)
+        self.stud_logo = dict.get(
+            'stud_logo', defaults.stud_logo)
 
     def save(self):
         with open(Preferences.preferences_path, 'w+') as file:
@@ -135,12 +141,12 @@ class ImportOperator(bpy.types.Operator, ImportHelper):
     filter_glob: StringProperty(
         default="*.mpd;*.ldr;*.dat",
         options={'HIDDEN'}
-    )
+    ) # type: ignore
 
     ldraw_path: StringProperty(
-        name="LDraw Library",
+        name="",
         default=preferences.ldraw_path
-    )
+    ) # type: ignore
 
     instance_type: EnumProperty(
         name="Instance Type",
@@ -153,30 +159,76 @@ class ImportOperator(bpy.types.Operator, ImportHelper):
         description="The method to use for instancing part meshes",
         # TODO: this doesn't set properly?
         default=preferences.instance_type
-    )
+    ) # type: ignore
 
     add_gap_between_parts: BoolProperty(
         name="Gap Between Parts",
         description="Scale to add a small gap horizontally between parts",
         default=preferences.add_gap_between_parts
-    )
+    ) # type: ignore
+
+    resolution: EnumProperty(
+        name="Resolution of primitives",
+        description="Resolution of primitive geometry (segments) - 8-Low, 16-Normal, 48-High",
+        default=preferences.resolution,
+        items=(
+            ("Low",     "Low (8-seg)", "Import using low resolution primitives."),
+            ("Normal",  "Normal (16-seg)", "Import using standard resolution primitives."),
+            ("High",    "High (48-seg)", "High resolution primitives - Added rendering and memory overheads ** Advise against using for complex models **")
+        )
+    ) # type: ignore
+
+    stud_logo: EnumProperty(
+        name="Stud Logo Type",
+        description="SHow/Hide stud logo, and determine the resolution/type",
+        default=preferences.stud_logo,
+        items=(
+            ("None",     "None", "Do not show logos on studs"),
+            ("Normal",  "Normal", "Basic quality logo"),
+            ("High",    "High", "High quality mesh logo - ** increased memory and rendering overheads **"),
+            ("Contrast",  "High Contrast",  "Similar style to that used in Lego Instructions with black highlighed studs")
+        )
+    ) # type: ignore
 
     def draw(self, context):
         layout = self.layout
         layout.use_property_split = True
-        layout.prop(self, "ldraw_path")
-        layout.prop(self, "instance_type")
-        layout.prop(self, "add_gap_between_parts")
+        layout.use_property_decorate = False
+
+        row = layout.row()
+        row.prop(self, "instance_type", expand=True)
+        row = layout.row()
+        row.prop(self, "add_gap_between_parts")
+        row = layout.row()
+        col = row.column(align=True)
+        col.prop(self, "resolution", expand=True)
+        row = layout.row()
+        col = row.column(align=True)
+        col.prop(self, "stud_logo", expand=True)
 
         # TODO: File selector?
         # TODO: Come up with better UI for this?
-        layout.label(text="Additional Library Paths")
-        for path in ImportOperator.preferences.additional_paths:
-            layout.label(text=path)
 
         row = layout.row()
+        row.label(text="LDraw Directory Path:")
+        row = layout.row()
+        row.scale_y = 1.2
+        row.prop(self, "ldraw_path")
+
+        row = layout.row()
+        row.label(text="Additional Library Paths:")
+
+        row = layout.row()
+        row.scale_y = 1.2
         row.prop(context.scene, "ldr_path_to_add")
+        row = layout.row()
         row.operator("additional_paths.new_item", text="Add Path")
+        row = layout.row()
+        col = row.column()
+
+        for path in ImportOperator.preferences.additional_paths:
+            col.label(text="\"" + path + "\"")
+        
         row = layout.row()
         row.operator("additional_paths.delete_item", text="Remove Path")
 
@@ -185,6 +237,8 @@ class ImportOperator(bpy.types.Operator, ImportHelper):
         ImportOperator.preferences.ldraw_path = self.ldraw_path
         ImportOperator.preferences.instance_type = self.instance_type
         ImportOperator.preferences.add_gap_between_parts = self.add_gap_between_parts
+        ImportOperator.preferences.resolution = self.resolution
+        ImportOperator.preferences.stud_logo = self.stud_logo
 
         import time
         start = time.time()
@@ -195,8 +249,8 @@ class ImportOperator(bpy.types.Operator, ImportHelper):
             ImportOperator.preferences.additional_paths,
             self.instance_type,
             self.add_gap_between_parts,
-            "High",
-            "High"
+            self.resolution,
+            self.stud_logo
         )
         end = time.time()
         print(f'Import: {end - start}')

@@ -137,10 +137,10 @@ pub enum StudType {
 
 impl Default for StudType {
     fn default() -> Self {
-        Self::Disabled
+        Self::Normal
     }
 }
-
+ 
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 #[pyclass(get_all, set_all)]
 pub enum PrimitiveResolution {
@@ -154,7 +154,7 @@ pub enum PrimitiveResolution {
 
 impl Default for PrimitiveResolution {
     fn default() -> Self {
-        Self::High
+        Self::Normal
     }
 }
 
