@@ -366,19 +366,19 @@ fn replace_studs(subfile_cmd: &weldr::SubFileRefCmd, stud_type: StudType) -> &st
             "stud2.dat" => "stud2-logo.dat",
             "stud20.dat" => "stud20-logo.dat",
             _ => subfile_cmd.file.as_str(),
-        },
+        }
         StudType::Normal => match subfile_cmd.file.as_str() {
             "stud.dat" => "stud-logo3.dat",
             "stud2.dat" => "stud2-logo3.dat",
             "stud20.dat" => "stud20-logo3.dat",
             _ => subfile_cmd.file.as_str(),
-        },
+        }
         StudType::Logo4 => match subfile_cmd.file.as_str() {
             "stud.dat" => "stud-logo4.dat",
             "stud2.dat" => "stud2-logo4.dat",
             "stud20.dat" => "stud20-logo4.dat",
             _ => subfile_cmd.file.as_str(),
-        },
+        }
         StudType::HighContrast => match subfile_cmd.file.as_str() {
             "stud.dat" => "stud-high-contrast.dat",
             "stud2.dat" => "stud2-high-contrast.dat",

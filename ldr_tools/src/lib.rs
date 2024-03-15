@@ -70,6 +70,8 @@ impl DiskResolver {
             base_paths.push(path.as_ref().to_owned());
         }
 
+        println!("Base Paths {base_paths:?}");
+
         Self { base_paths }
     }
 }
@@ -89,6 +91,7 @@ impl FileRefResolver for DiskResolver {
             None => {
                 // TODO: Is there a better way to allow partial imports with resolve errors?
                 println!("Error resolving {filename:?}");
+                println!("Error resolving {contents:?}");
                 Ok(Vec::new())
             }
         }
@@ -254,9 +257,11 @@ fn parse_file(
     println!("1- Stud Type {:?}", settings.stud_type);
 
     let main_model_name = weldr::parse(path, &resolver, &mut source_map).unwrap();
+    // Remove
     let mut parts = main_model_name.rsplit("/");
     let fname = parts.next().unwrap_or("");
     println!("1- Model Name: {:?}", fname);
+    //
     (source_map, main_model_name)
 }
 
@@ -273,14 +278,14 @@ fn ensure_studs(
         weldr::parse("stud-logo4.dat", resolver, source_map).unwrap();
         weldr::parse("stud2-logo4.dat", resolver, source_map).unwrap();
     } else if settings.stud_type == StudType::Normal {
-        weldr::parse("stud-logo2.dat", resolver, source_map).unwrap();
-        weldr::parse("stud2-logo2.dat", resolver, source_map).unwrap();
+        weldr::parse("stud-logo3.dat", resolver, source_map).unwrap();
+        weldr::parse("stud2-logo3.dat", resolver, source_map).unwrap();
     } else if settings.stud_type == StudType::HighContrast {
         weldr::parse("stud-high-contrast.dat", resolver, source_map).unwrap();
-        weldr::parse("stud-high-contrast2.dat", resolver, source_map).unwrap();
+        weldr::parse("stud2-high-contrast.dat", resolver, source_map).unwrap();
     } else {
-        weldr::parse("stud.dat", resolver, source_map).unwrap();
-        weldr::parse("stud2.dat", resolver, source_map).unwrap();
+        weldr::parse("stud-logo.dat", resolver, source_map).unwrap();
+        weldr::parse("stud2-logo.dat", resolver, source_map).unwrap();
     }
 }
 
