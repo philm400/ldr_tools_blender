@@ -87,7 +87,7 @@ class Preferences():
 
     def save(self):
         with open(Preferences.preferences_path, 'w+') as file:
-            json.dump(self, file, default=lambda o: o.__dict__)
+            json.dump(self, file, default=lambda o: o.__dict__, indent=2)
 
     @staticmethod
     def load():

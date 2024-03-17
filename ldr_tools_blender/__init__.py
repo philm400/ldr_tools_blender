@@ -19,7 +19,8 @@ def menuImport(self, context):
 
 
 classes = [operator.ImportOperator,
-           operator.LIST_OT_NewItem, operator.LIST_OT_DeleteItem]
+           operator.LIST_OT_NewItem,
+           operator.LIST_OT_DeleteItem]
 
 
 def register():
