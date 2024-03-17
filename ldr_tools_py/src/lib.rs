@@ -122,6 +122,7 @@ pub struct GeometrySettings {
     primitive_resolution: ldr_tools::PrimitiveResolution,
     weld_vertices: bool,
     scene_scale: f32,
+    unofficial_parts: bool
 }
 
 #[pymethods]
@@ -144,6 +145,7 @@ impl From<ldr_tools::GeometrySettings> for GeometrySettings {
             primitive_resolution: value.primitive_resolution,
             weld_vertices: value.weld_vertices,
             scene_scale: value.scene_scale,
+            unofficial_parts: value.unofficial_parts,
         }
     }
 }
@@ -168,6 +170,7 @@ impl From<&GeometrySettings> for ldr_tools::GeometrySettings {
                 _           => ldr_tools::PrimitiveResolution::Normal
             },
             scene_scale: value.scene_scale,
+            unofficial_parts: value.unofficial_parts
         }
     }
 }

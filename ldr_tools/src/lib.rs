@@ -45,18 +45,22 @@ impl DiskResolver {
         catalog_path: P,
         additional_paths: impl IntoIterator<Item = P>,
         resolution: PrimitiveResolution,
+        unofficial_parts: bool,
     ) -> Self {
         let catalog_path = catalog_path.as_ref().to_owned();
         let mut base_paths = vec![
             catalog_path.join("p"),
             catalog_path.join("parts"),
             catalog_path.join("parts").join("s"),
-            // Studio unoffical part folders.
-            catalog_path.join("UnOfficial").join("p"),
-            catalog_path.join("UnOfficial").join("parts"),
-            catalog_path.join("UnOfficial").join("parts").join("s"),
             // TODO: How to handle the case where subfiles can be in the same directory as the current file?
         ];
+        if unofficial_parts {
+            base_paths.push(catalog_path.join("UnOfficial").join("p"));
+            base_paths.push(catalog_path.join("UnOfficial").join("parts"));
+            base_paths.push(catalog_path.join("UnOfficial").join("parts").join("s"));
+        }
+        println!("catalog_path: {catalog_path:?}");
+        
         println!("Mesh Resolution: {:?}", resolution);
         // Insert at the front since earlier elements take priority.
         match resolution {
@@ -174,6 +178,7 @@ pub struct GeometrySettings {
     pub weld_vertices: bool, // TODO: default to true?
     pub primitive_resolution: PrimitiveResolution,
     pub scene_scale: f32,
+    pub unofficial_parts: bool,
 }
 
 impl Default for GeometrySettings {
@@ -188,6 +193,7 @@ impl Default for GeometrySettings {
             weld_vertices: Default::default(),
             primitive_resolution: Default::default(),
             scene_scale: 1.0,
+            unofficial_parts: Default::default(),
         }
     }
 }
@@ -252,6 +258,7 @@ fn parse_file(
         ldraw_path,
         additional_paths.iter().cloned(),
         settings.primitive_resolution,
+        settings.unofficial_parts,
     );
     let mut source_map = weldr::SourceMap::new();
     ensure_studs(settings, &resolver, &mut source_map);

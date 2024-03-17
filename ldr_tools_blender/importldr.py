@@ -25,6 +25,7 @@ def import_ldraw(
         import_resolution: str,
         import_stud_type: str,
         ground_object: bool,
+        unofficial_parts: bool,
     ):
     color_by_code = ldr_tools_py.load_color_table(ldraw_path)
 
@@ -35,6 +36,7 @@ def import_ldraw(
     settings.add_gap_between_parts = add_gap_between_parts
     settings.ground_object = ground_object
     settings.scene_scale = 1.0
+    settings.unofficial_parts = unofficial_parts
     # Required for calculated normals.
     settings.weld_vertices = True
 

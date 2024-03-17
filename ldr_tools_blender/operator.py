@@ -64,6 +64,7 @@ class Preferences():
         self.ground_object = True
         self.resolution = 'Normal'
         self.stud_logo = 'Normal'
+        self.unofficial_parts = True
 
     def from_dict(self, dict: dict[str, Any]):
         # Fill in defaults for any missing values.
@@ -265,6 +266,7 @@ class ImportOperator(bpy.types.Operator, ImportHelper):
         ImportOperator.preferences.ground_object = self.ground_object
         ImportOperator.preferences.resolution = self.resolution
         ImportOperator.preferences.stud_logo = self.stud_logo
+        ImportOperator.preferences.unofficial_parts = self.unofficial_parts
 
         import time
         start = time.time()
@@ -278,6 +280,7 @@ class ImportOperator(bpy.types.Operator, ImportHelper):
             self.resolution,
             self.stud_logo,
             self.ground_object,
+            self.unofficial_parts
         )
         end = time.time()
         print(f'Import: {end - start}')
