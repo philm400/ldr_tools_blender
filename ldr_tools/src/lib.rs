@@ -57,7 +57,7 @@ impl DiskResolver {
             catalog_path.join("UnOfficial").join("parts").join("s"),
             // TODO: How to handle the case where subfiles can be in the same directory as the current file?
         ];
-        println!("Mesh Resolution {:?}", resolution);
+        println!("Mesh Resolution: {:?}", resolution);
         // Insert at the front since earlier elements take priority.
         match resolution {
             PrimitiveResolution::Low => base_paths.insert(0, catalog_path.join("p").join("8")),
@@ -70,7 +70,7 @@ impl DiskResolver {
             base_paths.push(path.as_ref().to_owned());
         }
 
-        println!("Base Paths {base_paths:?}");
+        // println!("Base Paths {base_paths:?}");
 
         Self { base_paths }
     }
@@ -168,6 +168,7 @@ pub struct GeometrySettings {
     pub import_stud_type: String,
     pub triangulate: bool,
     pub add_gap_between_parts: bool,
+    pub ground_object: bool,
     // TODO: Create an enum for different stud types.
     pub stud_type: StudType,
     pub weld_vertices: bool, // TODO: default to true?
@@ -182,6 +183,7 @@ impl Default for GeometrySettings {
             import_stud_type: Default::default(),
             triangulate: Default::default(),
             add_gap_between_parts: Default::default(),
+            ground_object: Default::default(),
             stud_type: Default::default(),
             weld_vertices: Default::default(),
             primitive_resolution: Default::default(),
@@ -253,14 +255,12 @@ fn parse_file(
     );
     let mut source_map = weldr::SourceMap::new();
     ensure_studs(settings, &resolver, &mut source_map);
-    
-    println!("1- Stud Type {:?}", settings.stud_type);
 
     let main_model_name = weldr::parse(path, &resolver, &mut source_map).unwrap();
     // Remove
     let mut parts = main_model_name.rsplit("/");
     let fname = parts.next().unwrap_or("");
-    println!("1- Model Name: {:?}", fname);
+    println!("Model Name: {:?}", fname);
     //
     (source_map, main_model_name)
 }
@@ -271,7 +271,7 @@ fn ensure_studs(
     source_map: &mut weldr::SourceMap,
 ) {
 
-    println!("2- Stud Type {:?}", settings.stud_type);
+    println!("Stud Type: {:?}", settings.stud_type);
     // The replaced studs likely won't be referenced by existing files.
     // Make sure the selected stud type is in the source map.
     if settings.stud_type == StudType::Logo4 {

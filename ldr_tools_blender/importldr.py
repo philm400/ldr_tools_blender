@@ -13,7 +13,7 @@ from .ldr_tools_py import LDrawNode, LDrawGeometry, LDrawColor, GeometrySettings
 from .material import get_material
 
 # TODO: Add type hints for all functions.
-
+worldVertices = [] # collection for all mesh points to define bounding box and align to floor
 
 def import_ldraw(
         operator: bpy.types.Operator,
@@ -23,7 +23,8 @@ def import_ldraw(
         instance_type: str,
         add_gap_between_parts: bool,
         import_resolution: str,
-        import_stud_type: str
+        import_stud_type: str,
+        ground_object: bool,
     ):
     color_by_code = ldr_tools_py.load_color_table(ldraw_path)
 
@@ -32,11 +33,12 @@ def import_ldraw(
     settings.import_stud_type = import_stud_type #"Disabled"  #import_resolution
     settings.triangulate = False
     settings.add_gap_between_parts = add_gap_between_parts
+    settings.ground_object = ground_object
     settings.scene_scale = 1.0
     # Required for calculated normals.
     settings.weld_vertices = True
 
-    print(repr(settings))
+    #print(repr(settings))
 
     # TODO: Add an option to make the lowest point have a height of 0 using obj.dimensions?
     if instance_type == 'GeometryNodes':
@@ -67,6 +69,35 @@ def import_objects(filepath: str, ldraw_path: str, additional_paths: list[str], 
         (math.radians(-90.0), 0.0, 0.0), 'XYZ')
     root_obj.scale = (0.01, 0.01, 0.01)
 
+    bpy.context.view_layer.update()
+    for collection in bpy.data.collections:
+        for obj in collection.all_objects:
+            if obj.type == 'MESH':
+                for m in range(0, len(obj.data.vertices)):
+                    vx = obj.matrix_world @ obj.data.vertices[m].co
+                    worldVertices.append(vx) # add globel transformed vertices to array
+    # print(*worldVertices, sep='\n')
+
+    if settings.ground_object:
+        objectOnGround(root_obj)
+
+def objectOnGround(root_obj):
+    # Calculate our bounding box in global coordinate space
+        boundingBoxMin = mathutils.Vector((0, 0, 0))
+        boundingBoxMax = mathutils.Vector((0, 0, 0))
+
+        boundingBoxMin[0] = min(p[0] for p in worldVertices)
+        boundingBoxMin[1] = min(p[1] for p in worldVertices)
+        boundingBoxMin[2] = min(p[2] for p in worldVertices)
+        boundingBoxMax[0] = max(p[0] for p in worldVertices)
+        boundingBoxMax[1] = max(p[1] for p in worldVertices)
+        boundingBoxMax[2] = max(p[2] for p in worldVertices)
+
+        vcentre = (boundingBoxMin + boundingBoxMax) * 0.5
+        offsetToCentreModel = mathutils.Vector((-vcentre.x, -vcentre.y, -boundingBoxMin.z))
+        # if Options.positionObjectOnGroundAtOrigin:
+        print("Object placed on ground")
+        root_obj.location += offsetToCentreModel
 
 def add_nodes(node: LDrawNode,
               geometry_cache: dict[str, LDrawGeometry],
@@ -75,7 +106,7 @@ def add_nodes(node: LDrawNode,
 
     if node.geometry_name is not None:
         geometry = geometry_cache[node.geometry_name]
-
+        
         # Cache meshes to optimize import times and instance mesh data.
         # Linking an existing mesh data block greatly reduces memory usage.
         mesh_key = (node.geometry_name, node.current_color)
@@ -90,6 +121,7 @@ def add_nodes(node: LDrawNode,
         else:
             # Use an existing mesh data block like with linked duplicates (alt+d).
             obj = bpy.data.objects.new(node.name, blender_mesh)
+
     else:
         # Create an empty by setting the data to None.
         obj = bpy.data.objects.new(node.name, None)

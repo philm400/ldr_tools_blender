@@ -8,7 +8,6 @@ import platform
 
 from .importldr import import_ldraw
 
-
 def find_ldraw_library() -> str:
     # Get list of possible ldraw installation directories for the platform
     if platform.system() == 'Windows':
@@ -60,7 +59,9 @@ class Preferences():
         self.ldraw_path = find_ldraw_library()
         self.instance_type = 'LinkedDuplicates'
         self.additional_paths = []
+        self.unofficial_parts = True
         self.add_gap_between_parts = True
+        self.ground_object = True
         self.resolution = 'Normal'
         self.stud_logo = 'Normal'
 
@@ -72,8 +73,12 @@ class Preferences():
             'instance_type', defaults.instance_type)
         self.additional_paths = dict.get(
             'additional_paths', defaults.additional_paths)
+        self.unofficial_parts = dict.get(
+            'unofficial_parts', defaults.unofficial_parts)
         self.add_gap_between_parts = dict.get(
             'add_gap_between_parts', defaults.add_gap_between_parts)
+        self.ground_object = dict.get(
+            'ground_object', defaults.ground_object)
         self.resolution = dict.get(
             'resolution', defaults.resolution)
         self.stud_logo = dict.get(
@@ -167,6 +172,18 @@ class ImportOperator(bpy.types.Operator, ImportHelper):
         default=preferences.add_gap_between_parts
     ) # type: ignore
 
+    ground_object: BoolProperty(
+        name="Place Object on Ground",
+        description="Re-calcualtes the position of the object to sit at ground level in the scene",
+        default=preferences.ground_object
+    ) # type: ignore
+
+    unofficial_parts: BoolProperty(
+        name="Use Unofficial Parts",
+        description="Includes the 'UnOfficial/' parts folder in the list of folder to look for parts to import",
+        default=preferences.unofficial_parts
+    ) # type: ignore
+
     resolution: EnumProperty(
         name="Resolution of primitives",
         description="Resolution of primitive geometry (segments) - 8-Low, 16-Normal, 48-High",
@@ -196,7 +213,8 @@ class ImportOperator(bpy.types.Operator, ImportHelper):
         layout.use_property_decorate = False
 
         row = layout.row()
-        row.prop(self, "instance_type", expand=True)
+        col = row.column(align=True)
+        col.prop(self, "instance_type", expand=True)
         row = layout.row()
         row.prop(self, "add_gap_between_parts")
         row = layout.row()
@@ -205,15 +223,21 @@ class ImportOperator(bpy.types.Operator, ImportHelper):
         row = layout.row()
         col = row.column(align=True)
         col.prop(self, "stud_logo", expand=True)
+        row = layout.row()
+        row.prop(self, "ground_object")
 
         # TODO: File selector?
         # TODO: Come up with better UI for this?
 
+        layout.separator(factor=1.5)
+        layout.use_property_split = False
         row = layout.row()
         row.label(text="LDraw Directory Path:")
         row = layout.row()
         row.scale_y = 1.2
         row.prop(self, "ldraw_path")
+        row = layout.row()
+        row.prop(self, "unofficial_parts")
 
         row = layout.row()
         row.label(text="Additional Library Paths:")
@@ -237,6 +261,8 @@ class ImportOperator(bpy.types.Operator, ImportHelper):
         ImportOperator.preferences.ldraw_path = self.ldraw_path
         ImportOperator.preferences.instance_type = self.instance_type
         ImportOperator.preferences.add_gap_between_parts = self.add_gap_between_parts
+        ImportOperator.preferences.unofficial_parts = self.unofficial_parts
+        ImportOperator.preferences.ground_object = self.ground_object
         ImportOperator.preferences.resolution = self.resolution
         ImportOperator.preferences.stud_logo = self.stud_logo
 
@@ -250,7 +276,8 @@ class ImportOperator(bpy.types.Operator, ImportHelper):
             self.instance_type,
             self.add_gap_between_parts,
             self.resolution,
-            self.stud_logo
+            self.stud_logo,
+            self.ground_object,
         )
         end = time.time()
         print(f'Import: {end - start}')

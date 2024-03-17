@@ -117,6 +117,7 @@ pub struct GeometrySettings {
     import_stud_type: String,
     triangulate: bool,
     add_gap_between_parts: bool,
+    ground_object: bool,
     stud_type: ldr_tools::StudType,
     primitive_resolution: ldr_tools::PrimitiveResolution,
     weld_vertices: bool,
@@ -138,6 +139,7 @@ impl From<ldr_tools::GeometrySettings> for GeometrySettings {
             import_stud_type: value.import_stud_type,
             triangulate: value.triangulate,
             add_gap_between_parts: value.add_gap_between_parts,
+            ground_object: value.ground_object,
             stud_type: value.stud_type,
             primitive_resolution: value.primitive_resolution,
             weld_vertices: value.weld_vertices,
@@ -152,6 +154,7 @@ impl From<&GeometrySettings> for ldr_tools::GeometrySettings {
             import_stud_type: value.import_stud_type.clone(),
             triangulate: value.triangulate,
             add_gap_between_parts: value.add_gap_between_parts,
+            ground_object: value.ground_object,
             stud_type: if value.import_stud_type == "Normal" {
                 ldr_tools::StudType::Normal
             } else if value.import_stud_type == "High" {
