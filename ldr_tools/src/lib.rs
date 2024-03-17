@@ -128,14 +128,14 @@ pub struct PointInstances {
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 #[pyclass(get_all, set_all)]
 pub enum StudType {
-    /// Removes all visible and internal studs.
+    /// Removes Lego logo from stud - Good for high brick count models
     Disabled,
-    /// The default stud model and quality.
+    /// default quality Lego logo
     Normal,
-    /// A higher quality modeled logo suitable for realistic rendering.
+    /// High qulity logo with bevel - for realistic rendering
     Logo4,
-    /// Studs with black sides similar to official LEGO instructions.
-    HighContrast,
+    /// Hight contrast studs with black side, similar to Lego instructions
+    HighContrast,  
 }
 
 impl Default for StudType {
@@ -147,12 +147,12 @@ impl Default for StudType {
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 #[pyclass(get_all, set_all)]
 pub enum PrimitiveResolution {
-    /// Primitives in the `p/8` folder.
-    Low,
-    /// The standard primitive resolution
-    Normal,
-    /// Primitives in the `p/48` folder.
-    High,
+    /// Low poly Primitives in the `p/8` folder.
+    Low, 
+    /// The standard primitive resolution   
+    Normal, 
+    /// High quality Primitives in the `p/48` folder.
+    High, 
 }
 
 impl Default for PrimitiveResolution {

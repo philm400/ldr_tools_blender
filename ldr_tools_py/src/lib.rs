@@ -155,22 +155,17 @@ impl From<&GeometrySettings> for ldr_tools::GeometrySettings {
             triangulate: value.triangulate,
             add_gap_between_parts: value.add_gap_between_parts,
             ground_object: value.ground_object,
-            stud_type: if value.import_stud_type == "Normal" {
-                ldr_tools::StudType::Normal
-            } else if value.import_stud_type == "High" {
-                ldr_tools::StudType::Logo4
-            } else if value.import_stud_type == "Contrast" {
-                ldr_tools::StudType::HighContrast
-            } else {
-                ldr_tools::StudType::Disabled
+            stud_type: match value.import_stud_type.as_str() {
+                "Normal"    => ldr_tools::StudType::Normal,
+                "High"      => ldr_tools::StudType::Logo4,
+                "Contrast"  => ldr_tools::StudType::HighContrast,
+                _           => ldr_tools::StudType::Disabled
             },
             weld_vertices: value.weld_vertices,
-            primitive_resolution: if value.import_resolution == "Low" {
-                ldr_tools::PrimitiveResolution::Low
-            } else if value.import_resolution == "High" {
-                ldr_tools::PrimitiveResolution::High
-            } else {
-                ldr_tools::PrimitiveResolution::Normal
+            primitive_resolution: match value.import_resolution.as_str() {
+                "Low"       => ldr_tools::PrimitiveResolution::Low,
+                "High"      => ldr_tools::PrimitiveResolution::High,
+                _           => ldr_tools::PrimitiveResolution::Normal
             },
             scene_scale: value.scene_scale,
         }
