@@ -100,7 +100,77 @@ class Preferences():
             preferences = Preferences()
 
         return preferences
+    
 
+class LDRAW_PATH_LIST_ITEM(bpy.types.PropertyGroup): 
+    """Group of properties representing an item in the list."""
+    name: StringProperty(
+        name="File Path:",
+        description="Local file path for an instance of LDraw or other parts",
+        default="New path...."
+    )
+
+class LDRAW_PATH_UL_List(bpy.types.UIList):
+    """The UIList - Plain and simple, no filtering option"""
+    
+    def draw_item(self, context, layout, data, item, icon, active_data, active_propname, index):
+        self.use_filter_show = False
+        layout.label(text=item.name, icon='NONE') 
+      
+class LDRAW_PATH_LIST_OT_NewItem(bpy.types.Operator): 
+    """Add a new item to the list."""     
+    bl_idname = "ldraw_path_list.new_item"
+    bl_label = "Add a new item"
+    
+    def execute(self, context): 
+        context.scene.ldraw_path_list.add()
+        len_i = len(context.scene.ldraw_path_list)
+        context.scene.ldraw_path_list_index = len_i-1
+        return{'FINISHED'}
+    
+class LDRAW_PATH_LIST_OT_DeleteItem(bpy.types.Operator):
+    """Delete the selected item from the list."""    
+    bl_idname = "ldraw_path_list.delete_item"
+    bl_label = "Deletes an item"
+    
+    @classmethod
+    def poll(cls, context): 
+        return context.scene.ldraw_path_list
+    
+    def execute(self, context): 
+        my_list = context.scene.ldraw_path_list
+        index = context.scene.ldraw_path_list_index
+        my_list.remove(index)
+        context.scene.ldraw_path_list_index = min(max(0, index - 1), len(context.scene.ldraw_path_list) - 1)
+        return{'FINISHED'}
+
+class LDRAW_PATH_LIST_OT_MoveItem(bpy.types.Operator):
+    """Move an item in the list."""
+    
+    bl_idname = "ldraw_path_list.move_item"
+    bl_label = "Move an item in the list"
+    direction: EnumProperty(items=(('UP', 'Up', ""), ('DOWN', 'Down', ""),))
+    
+    @classmethod
+    def poll(cls, context): 
+        return context.scene.ldraw_path_list
+    
+    def move_index(self):
+        """ Move index of an item render queue while clamping it. """
+         
+        index = bpy.context.scene.ldraw_path_list_index
+        list_length = len(bpy.context.scene.ldraw_path_list) - 1 # (index starts at 0)
+        new_index = index + (-1 if self.direction == 'UP' else 1)
+        
+        bpy.context.scene.ldraw_path_list_index = max(0, min(new_index, list_length))
+        
+    def execute(self, context):
+        my_list = context.scene.ldraw_path_list
+        index = context.scene.ldraw_path_list_index
+        neighbor = index + (-1 if self.direction == 'UP' else 1)
+        my_list.move(neighbor, index)
+        self.move_index()
+        return{'FINISHED'}
 
 class LIST_OT_NewItem(bpy.types.Operator):
     """Add a new item to the list."""
@@ -211,51 +281,8 @@ class ImportOperator(bpy.types.Operator, ImportHelper):
     def draw(self, context):
         layout = self.layout
         layout.use_property_split = True
-        layout.use_property_decorate = False
 
-        row = layout.row()
-        col = row.column(align=True)
-        col.prop(self, "instance_type", expand=True)
-        row = layout.row()
-        row.prop(self, "add_gap_between_parts")
-        row = layout.row()
-        col = row.column(align=True)
-        col.prop(self, "resolution", expand=True)
-        row = layout.row()
-        col = row.column(align=True)
-        col.prop(self, "stud_logo", expand=True)
-        row = layout.row()
-        row.prop(self, "ground_object")
-
-        # TODO: File selector?
-        # TODO: Come up with better UI for this?
-
-        layout.separator(factor=1.5)
-        layout.use_property_split = False
-        row = layout.row()
-        row.label(text="LDraw Directory Path:")
-        row = layout.row()
-        row.scale_y = 1.2
-        row.prop(self, "ldraw_path")
-        row = layout.row()
-        row.prop(self, "unofficial_parts")
-
-        row = layout.row()
-        row.label(text="Additional Library Paths:")
-
-        row = layout.row()
-        row.scale_y = 1.2
-        row.prop(context.scene, "ldr_path_to_add")
-        row = layout.row()
-        row.operator("additional_paths.new_item", text="Add Path")
-        row = layout.row()
-        col = row.column()
-
-        for path in ImportOperator.preferences.additional_paths:
-            col.label(text="\"" + path + "\"")
-        
-        row = layout.row()
-        row.operator("additional_paths.delete_item", text="Remove Path")
+        layout.label(text="LDR Import Options", icon='MESH_DATA')
 
     def execute(self, context):
         # Update from the UI values to support saving them to disk later.
@@ -266,7 +293,11 @@ class ImportOperator(bpy.types.Operator, ImportHelper):
         ImportOperator.preferences.ground_object = self.ground_object
         ImportOperator.preferences.resolution = self.resolution
         ImportOperator.preferences.stud_logo = self.stud_logo
-        ImportOperator.preferences.unofficial_parts = self.unofficial_parts
+
+        data = []
+        for i, item in enumerate(context.scene.ldraw_path_list, 1):
+            data.append(item.name)
+        ImportOperator.preferences.additional_paths = data
 
         import time
         start = time.time()
@@ -288,3 +319,98 @@ class ImportOperator(bpy.types.Operator, ImportHelper):
         # Save preferences to disk for loading next time.
         ImportOperator.preferences.save()
         return {'FINISHED'}
+
+class GEOMETRY_OPTIONS_PT_Panel(bpy.types.Panel):
+    bl_space_type = 'FILE_BROWSER'
+    bl_region_type = 'TOOL_PROPS'
+    bl_label = "Geometry Options"
+    bl_idname = "GEOMETRY_OPTIONS_PT_Panel"
+
+    @classmethod
+    def poll(cls, context):
+        sfile = context.space_data
+        operator = sfile.active_operator
+        return operator.bl_idname == "IMPORT_SCENE_OT_importldr"
+    
+    def draw(self, context):
+        sfile = context.space_data
+        operator = sfile.active_operator
+
+        layout = self.layout
+        layout.use_property_split = True
+        layout.use_property_decorate = False
+
+        row = layout.row()
+        col = row.column(align=True)
+        col.prop(operator, "instance_type", expand=True)
+        row = layout.row()
+        row.prop(operator, "add_gap_between_parts")
+        row = layout.row()
+        col = row.column(align=True)
+        col.prop(operator, "resolution", expand=True)
+        row = layout.row()
+        col = row.column(align=True)
+        col.prop(operator, "stud_logo", expand=True)
+        row = layout.row()
+        row.prop(operator, "ground_object")
+
+
+class PARTS_OPTIONS_PT_Panel(bpy.types.Panel):
+    bl_space_type = 'FILE_BROWSER'
+    bl_region_type = 'TOOL_PROPS'
+    bl_label = "LDraw Parts Library"
+    bl_idname = "PARTS_OPTIONS_PT_Panel"
+
+    @classmethod
+    def poll(cls, context): 
+        sfile =    context.space_data
+        operator = sfile.active_operator
+        return operator.bl_idname == "IMPORT_SCENE_OT_importldr"
+    
+    def draw(self, context):
+        scene = context.scene
+        sfile = context.space_data
+        operator = sfile.active_operator
+
+        layout = self.layout
+        layout.use_property_split = True
+        layout.use_property_decorate = False
+
+        row = layout.row()
+        row.label(text="LDraw Directory Path:")
+        row = layout.row()
+        row.scale_y = 1.5
+        row.prop(operator, "ldraw_path")
+
+        layout.use_property_split = False
+        row = layout.row()
+        row.prop(operator, "unofficial_parts")
+
+        row = layout.row()
+        row.label(text="Additional Library Paths:")
+
+        row = layout.row()
+        
+        col = row.column()
+        col.template_list(
+            "LDRAW_PATH_UL_List",
+            "The_List",
+            scene,
+            "ldraw_path_list",
+            scene,
+            "ldraw_path_list_index",
+            rows=3
+        )        
+        col = row.column(align=True)
+        col.operator('ldraw_path_list.new_item', text='', icon='ADD')
+        col.separator(factor=0.2)
+        col.operator('ldraw_path_list.delete_item', text='', icon='REMOVE')
+        col.separator(factor=1.5)
+        col.operator('ldraw_path_list.move_item', text='', icon='TRIA_UP').direction = 'UP'
+        col.separator(factor=0.2)
+        col.operator('ldraw_path_list.move_item', text='', icon='TRIA_DOWN').direction = 'DOWN'
+        
+        if scene.ldraw_path_list_index >= 0 and scene.ldraw_path_list:
+            item = scene.ldraw_path_list[scene.ldraw_path_list_index]
+            row = layout.row()
+            row.prop(item, "name")
