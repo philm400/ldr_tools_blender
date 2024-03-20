@@ -147,7 +147,7 @@ pub struct GeometrySettings {
     primitive_resolution: PrimitiveResolution,
     weld_vertices: bool,
     scene_scale: f32,
-    unofficial_parts: bool
+    unofficial_parts: bool,
 }
 
 python_enum!(
@@ -230,11 +230,12 @@ fn load_file(
     path: &str,
     ldraw_path: &str,
     additional_paths: Vec<&str>,
+    custom_mesh_path: &str,
     settings: &GeometrySettings,
 ) -> PyResult<LDrawScene> {
     // TODO: This timing code doesn't need to be here.
     let start = std::time::Instant::now();
-    let scene = ldr_tools::load_file(path, ldraw_path, &additional_paths, &settings.into());
+    let scene = ldr_tools::load_file(path, ldraw_path, &additional_paths, custom_mesh_path, &settings.into());
 
     let geometry_cache = scene
         .geometry_cache
@@ -255,11 +256,12 @@ fn load_file_instanced(
     path: &str,
     ldraw_path: &str,
     additional_paths: Vec<&str>,
+    custom_mesh_path: &str,
     settings: &GeometrySettings,
 ) -> PyResult<LDrawSceneInstanced> {
     let start = std::time::Instant::now();
     let scene =
-        ldr_tools::load_file_instanced(path, ldraw_path, &additional_paths, &settings.into());
+        ldr_tools::load_file_instanced(path, ldraw_path, &additional_paths, custom_mesh_path, &settings.into());
 
     let geometry_cache = scene
         .geometry_cache
@@ -304,6 +306,7 @@ fn load_file_instanced_points(
     path: &str,
     ldraw_path: &str,
     additional_paths: Vec<&str>,
+    custom_mesh_path: &str,
     settings: &GeometrySettings,
 ) -> PyResult<LDrawSceneInstancedPoints> {
     let start = std::time::Instant::now();
@@ -311,6 +314,7 @@ fn load_file_instanced_points(
         path,
         ldraw_path,
         &additional_paths,
+        custom_mesh_path,
         &settings.into(),
     );
 

@@ -44,14 +44,20 @@ impl DiskResolver {
     fn new_from_library<P: AsRef<Path>>(
         catalog_path: P,
         additional_paths: impl IntoIterator<Item = P>,
+        custom_mesh_path: P,
         resolution: PrimitiveResolution,
         unofficial_parts: bool,
     ) -> Self {
         let catalog_path = catalog_path.as_ref().to_owned();
+        let custom_mesh_path = custom_mesh_path.as_ref().to_owned();
         let mut base_paths = vec![
             catalog_path.join("p"),
             catalog_path.join("parts"),
             catalog_path.join("parts").join("s"),
+            // Add paths for custom parts bundled with this add-on (eg. High Contrast studs)
+            custom_mesh_path.join("p"),
+            custom_mesh_path.join("parts"),
+            custom_mesh_path.join("parts").join("s"),
             // TODO: How to handle the case where subfiles can be in the same directory as the current file?
         ];
         if unofficial_parts {
@@ -59,22 +65,29 @@ impl DiskResolver {
             base_paths.push(catalog_path.join("UnOfficial").join("parts"));
             base_paths.push(catalog_path.join("UnOfficial").join("parts").join("s"));
         }
-        println!("catalog_path: {catalog_path:?}");
-        
-        println!("Mesh Resolution: {:?}", resolution);
         // Insert at the front since earlier elements take priority.
         match resolution {
-            PrimitiveResolution::Low => base_paths.insert(0, catalog_path.join("p").join("8")),
+            PrimitiveResolution::Low => {
+                base_paths.insert(0, catalog_path.join("p").join("8"));
+                base_paths.insert(4, custom_mesh_path.join("p").join("8"));
+                if unofficial_parts {
+                    base_paths.insert(8, catalog_path.join("UnOfficial").join("p").join("8"));
+                }
+            },
             PrimitiveResolution::Normal => (),
-            PrimitiveResolution::High => base_paths.insert(0, catalog_path.join("p").join("48")),
+            PrimitiveResolution::High => {
+                base_paths.insert(0, catalog_path.join("p").join("48"));
+                base_paths.insert(3, catalog_path.join("parts").join("s").join("48"));
+                base_paths.insert(5, custom_mesh_path.join("p").join("48"));
+                if unofficial_parts {
+                    base_paths.insert(9, catalog_path.join("UnOfficial").join("p").join("48"));
+                }
+            }
         }
-
         // Users may want to specify additional folders for parts.
         for path in additional_paths {
             base_paths.push(path.as_ref().to_owned());
         }
-
-        // println!("Base Paths {base_paths:?}");
 
         Self { base_paths }
     }
@@ -218,9 +231,10 @@ pub fn load_file(
     path: &str,
     ldraw_path: &str,
     additional_paths: &[&str],
+    custom_mesh_path: &str,
     settings: &GeometrySettings,
 ) -> LDrawScene {
-    let (source_map, main_model_name) = parse_file(path, ldraw_path, additional_paths, settings);
+    let (source_map, main_model_name) = parse_file(path, ldraw_path, additional_paths, custom_mesh_path, settings);
     let source_file = source_map.get(&main_model_name).unwrap();
 
     // Collect the scene hierarchy and geometry descriptors.
@@ -248,11 +262,13 @@ fn parse_file(
     path: &str,
     ldraw_path: &str,
     additional_paths: &[&str],
+    custom_mesh_path: &str,
     settings: &GeometrySettings,
 ) -> (weldr::SourceMap, String) {
     let resolver = DiskResolver::new_from_library(
         ldraw_path,
         additional_paths.iter().cloned(),
+        custom_mesh_path,
         settings.primitive_resolution,
         settings.unofficial_parts,
     );
@@ -263,7 +279,11 @@ fn parse_file(
     // Remove
     let mut parts = main_model_name.rsplit("/");
     let fname = parts.next().unwrap_or("");
-    println!("Model Name: {:?}", fname);
+    println!("---------------------------------------");
+    println!(" • Model Name: {:?}", fname);
+    println!(" • Primitive Resolution: {:?}", settings.primitive_resolution);
+    println!(" • Stud Logo Style: {:?}", settings.stud_type);
+    println!("---------------------------------------");
     //
     (source_map, main_model_name)
 }
@@ -273,8 +293,6 @@ fn ensure_studs(
     resolver: &DiskResolver,
     source_map: &mut weldr::SourceMap,
 ) {
-
-    println!("Stud Type: {:?}", settings.stud_type);
     // The replaced studs likely won't be referenced by existing files.
     // Make sure the selected stud type is in the source map.
     if settings.stud_type == StudType::Logo4 {
@@ -409,9 +427,10 @@ pub fn load_file_instanced_points(
     path: &str,
     ldraw_path: &str,
     additional_paths: &[&str],
+    custom_mesh_path: &str,
     settings: &GeometrySettings,
 ) -> LDrawSceneInstancedPoints {
-    let scene = load_file_instanced(path, ldraw_path, additional_paths, settings);
+    let scene = load_file_instanced(path, ldraw_path, additional_paths, custom_mesh_path, settings);
 
     let geometry_point_instances = scene
         .geometry_world_transforms
@@ -467,9 +486,10 @@ pub fn load_file_instanced(
     path: &str,
     ldraw_path: &str,
     additional_paths: &[&str],
+    custom_mesh_path: &str,
     settings: &GeometrySettings,
 ) -> LDrawSceneInstanced {
-    let (source_map, main_model_name) = parse_file(path, ldraw_path, additional_paths, settings);
+    let (source_map, main_model_name) = parse_file(path, ldraw_path, additional_paths, custom_mesh_path, settings);
     let source_file = source_map.get(&main_model_name).unwrap();
 
     // Find the world transforms for each geometry.

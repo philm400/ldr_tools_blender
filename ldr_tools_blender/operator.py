@@ -8,6 +8,8 @@ import platform
 
 from .importldr import import_ldraw
 
+custom_mesh_dir = os.path.dirname(os.path.abspath(__file__))+"/meshes"
+
 def find_ldraw_library() -> str:
     # Get list of possible ldraw installation directories for the platform
     if platform.system() == 'Windows':
@@ -311,7 +313,8 @@ class ImportOperator(bpy.types.Operator, ImportHelper):
             self.resolution,
             self.stud_logo,
             self.ground_object,
-            self.unofficial_parts
+            self.unofficial_parts,
+            custom_mesh_dir,
         )
         end = time.time()
         print(f'Import: {end - start}')

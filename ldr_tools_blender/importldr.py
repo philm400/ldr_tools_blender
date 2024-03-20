@@ -25,6 +25,7 @@ def import_ldraw(
         stud_type: str,
         ground_object: bool,
         unofficial_parts: bool,
+        custom_mesh_path: str,
     ):
     color_by_code = ldr_tools_py.load_color_table(ldraw_path)
 
@@ -44,9 +45,9 @@ def import_ldraw(
     # TODO: Add an option to make the lowest point have a height of 0 using obj.dimensions?
     if instance_type == 'GeometryNodes':
         import_instanced(filepath, ldraw_path,
-                         additional_paths, color_by_code, settings)
+                         additional_paths, custom_mesh_path, color_by_code, settings)
     elif instance_type == 'LinkedDuplicates':
-        import_objects(filepath, ldraw_path, additional_paths,
+        import_objects(filepath, ldraw_path, additional_paths, custom_mesh_path,
                        color_by_code, settings)
 
 def match_stud(stud_type) -> any:
@@ -64,12 +65,12 @@ def match_primitive(primitive_resolution) -> any:
         case 'High': return ldr_tools_py.PrimitiveResolution.High
         case _: return ldr_tools_py.PrimitiveResolution.Normal
 
-def import_objects(filepath: str, ldraw_path: str, additional_paths: list[str], color_by_code: dict[int, LDrawColor], settings: GeometrySettings):
+def import_objects(filepath: str, ldraw_path: str, additional_paths: list[str], custom_mesh_path: str, color_by_code: dict[int, LDrawColor], settings: GeometrySettings):
     # Create an object for each part in the scene.
     # This still uses instances the mesh data blocks for reduced memory usage.
     blender_mesh_cache = {}
     scene = ldr_tools_py.load_file(
-        filepath, ldraw_path, additional_paths, settings)
+        filepath, ldraw_path, additional_paths, custom_mesh_path, settings)
 
     root_obj = add_nodes(scene.root_node, scene.geometry_cache,
                          blender_mesh_cache, color_by_code)
@@ -153,11 +154,11 @@ def add_nodes(node: LDrawNode,
     return obj
 
 
-def import_instanced(filepath: str, ldraw_path: str, additional_paths: list[str], color_by_code: dict[int, LDrawColor], settings: GeometrySettings):
+def import_instanced(filepath: str, ldraw_path: str, additional_paths: list[str], custom_mesh_path: str, color_by_code: dict[int, LDrawColor], settings: GeometrySettings):
     # Instance each part on the points of a mesh.
     # This avoids overhead from object creation for large scenes.
     scene = ldr_tools_py.load_file_instanced_points(
-        filepath, ldraw_path, additional_paths, settings)
+        filepath, ldraw_path, additional_paths, custom_mesh_path, settings)
 
     # First create all the meshes and materials.
     blender_mesh_cache = {}
