@@ -7,8 +7,8 @@ from threading import Timer
 bl_info = {
     "name": "ldr_tools_blender",
     "description": "Import LDraw models in .mpd .ldr, and .dat formats",
-    "author": "ScanMountGoat (SMG) & Philm400",
-    "version": (0, 3, 1),
+    "author": "Philm400 (forked from ScanMountGoat)",
+    "version": (0, 3, 2),
     "blender": (4, 0, 0),
     "location": "File > Import",
     "warning": "",

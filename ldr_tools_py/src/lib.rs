@@ -3,6 +3,33 @@ use std::collections::HashMap;
 use numpy::IntoPyArray;
 use pyo3::prelude::*;
 
+macro_rules! python_enum {
+    ($py_ty:ident, $rust_ty:ty, $( $i:ident ),+) => {
+        #[pyclass]
+        #[derive(Debug, Clone, Copy)]
+        pub enum $py_ty {
+            $($i),*
+        }
+
+        // These will generate a compile error if variant names don't match.
+        impl From<$rust_ty> for $py_ty {
+            fn from(value: $rust_ty) -> Self {
+                match value {
+                    $(<$rust_ty>::$i => Self::$i),*
+                }
+            }
+        }
+
+        impl From<$py_ty> for $rust_ty {
+            fn from(value: $py_ty) -> Self {
+                match value {
+                    $(<$py_ty>::$i => Self::$i),*
+                }
+            }
+        }
+    };
+}
+
 #[pyclass(get_all)]
 #[derive(Debug, Clone)]
 pub struct LDrawNode {
@@ -109,21 +136,36 @@ impl From<ldr_tools::LDrawColor> for LDrawColor {
     }
 }
 
-// TODO: make a proper enum for the stud type.
+
 #[pyclass(get_all, set_all)]
 #[derive(Debug, Clone)]
 pub struct GeometrySettings {
-    import_resolution: String,
-    import_stud_type: String,
     triangulate: bool,
     add_gap_between_parts: bool,
     ground_object: bool,
-    stud_type: ldr_tools::StudType,
-    primitive_resolution: ldr_tools::PrimitiveResolution,
+    stud_type: StudType,
+    primitive_resolution: PrimitiveResolution,
     weld_vertices: bool,
     scene_scale: f32,
     unofficial_parts: bool
 }
+
+python_enum!(
+    StudType,
+    ldr_tools::StudType,
+    Disabled,
+    Normal,
+    Logo4,
+    HighContrast
+);
+
+python_enum!(
+    PrimitiveResolution,
+    ldr_tools::PrimitiveResolution,
+    Low,
+    Normal,
+    High
+);
 
 #[pymethods]
 impl GeometrySettings {
@@ -136,13 +178,11 @@ impl GeometrySettings {
 impl From<ldr_tools::GeometrySettings> for GeometrySettings {
     fn from(value: ldr_tools::GeometrySettings) -> Self {
         Self {
-            import_resolution: value.import_resolution,
-            import_stud_type: value.import_stud_type,
             triangulate: value.triangulate,
             add_gap_between_parts: value.add_gap_between_parts,
             ground_object: value.ground_object,
-            stud_type: value.stud_type,
-            primitive_resolution: value.primitive_resolution,
+            stud_type: value.stud_type.into(),
+            primitive_resolution: value.primitive_resolution.into(),
             weld_vertices: value.weld_vertices,
             scene_scale: value.scene_scale,
             unofficial_parts: value.unofficial_parts,
@@ -152,23 +192,12 @@ impl From<ldr_tools::GeometrySettings> for GeometrySettings {
 impl From<&GeometrySettings> for ldr_tools::GeometrySettings {
     fn from(value: &GeometrySettings) -> Self {
         Self {
-            import_resolution: value.import_resolution.clone(),
-            import_stud_type: value.import_stud_type.clone(),
             triangulate: value.triangulate,
             add_gap_between_parts: value.add_gap_between_parts,
             ground_object: value.ground_object,
-            stud_type: match value.import_stud_type.as_str() {
-                "Normal"    => ldr_tools::StudType::Normal,
-                "High"      => ldr_tools::StudType::Logo4,
-                "Contrast"  => ldr_tools::StudType::HighContrast,
-                _           => ldr_tools::StudType::Disabled
-            },
+            stud_type: value.stud_type.into(),
             weld_vertices: value.weld_vertices,
-            primitive_resolution: match value.import_resolution.as_str() {
-                "Low"       => ldr_tools::PrimitiveResolution::Low,
-                "High"      => ldr_tools::PrimitiveResolution::High,
-                _           => ldr_tools::PrimitiveResolution::Normal
-            },
+            primitive_resolution: value.primitive_resolution.into(),
             scene_scale: value.scene_scale,
             unofficial_parts: value.unofficial_parts
         }
@@ -334,6 +363,8 @@ fn ldr_tools_py(_py: Python<'_>, m: &PyModule) -> PyResult<()> {
     m.add_class::<LDrawGeometry>()?;
     m.add_class::<LDrawColor>()?;
     m.add_class::<GeometrySettings>()?;
+    m.add_class::<StudType>()?;
+    m.add_class::<PrimitiveResolution>()?;
     m.add_class::<PointInstances>()?;
 
     m.add_function(wrap_pyfunction!(load_file, m)?)?;

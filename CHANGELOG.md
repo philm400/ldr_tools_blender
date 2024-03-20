@@ -3,6 +3,22 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+### 0.3.2 - 2023-03-20
+### Changed
+* Updated the Additional file path options to use a UIList element
+* Updated the Stud Type and Primitive resolution codebase to align with ScanMountGoat's implementation and use of new Enum's in Rust/Pyo3
+
+### 0.3.1 - 2023-03-16
+### Added
+* Added Stud Logo choice
+* Added Primitive Resolution choice
+* Added Option to set object on the ground plane at import
+* Added option to include/ignore "unofficial/" parts folder
+
+### Changed
+* Completely revised the UILayout engine for import properties, updated to use bpy.types.Panel to group options together
+* Changed EnumProperty visual output to Expanded=True to show as a button list instead of drop select
+
 ### 0.3.0 - 2023-12-03
 ### Added
 * Added an option to enable or disable the gap between parts when importing.

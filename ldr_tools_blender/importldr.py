@@ -2,7 +2,6 @@ import bpy
 import numpy as np
 import mathutils
 import math
-import bmesh
 import os
 
 # TODO: Create a pyi type stub file?
@@ -22,16 +21,16 @@ def import_ldraw(
         additional_paths: list[str],
         instance_type: str,
         add_gap_between_parts: bool,
-        import_resolution: str,
-        import_stud_type: str,
+        primitive_resolution: str,
+        stud_type: str,
         ground_object: bool,
         unofficial_parts: bool,
     ):
     color_by_code = ldr_tools_py.load_color_table(ldraw_path)
 
     settings = GeometrySettings()
-    settings.import_resolution =  import_resolution #"Low" #import_resolution
-    settings.import_stud_type = import_stud_type #"Disabled"  #import_resolution
+    settings.primitive_resolution = match_primitive(primitive_resolution)
+    settings.stud_type = match_stud(stud_type)
     settings.triangulate = False
     settings.add_gap_between_parts = add_gap_between_parts
     settings.ground_object = ground_object
@@ -50,6 +49,20 @@ def import_ldraw(
         import_objects(filepath, ldraw_path, additional_paths,
                        color_by_code, settings)
 
+def match_stud(stud_type) -> any:
+    match stud_type:
+        case 'None': return ldr_tools_py.StudType.Disabled
+        case 'Normal': return ldr_tools_py.StudType.Normal
+        case 'High': return ldr_tools_py.StudType.Logo4
+        case 'Contrast': return ldr_tools_py.StudType.HighContrast
+        case _: return ldr_tools_py.StudType.Disabled
+
+def match_primitive(primitive_resolution) -> any:
+    match primitive_resolution:
+        case 'Low': return ldr_tools_py.PrimitiveResolution.Low
+        case 'Normal': return ldr_tools_py.PrimitiveResolution.Normal
+        case 'High': return ldr_tools_py.PrimitiveResolution.High
+        case _: return ldr_tools_py.PrimitiveResolution.Normal
 
 def import_objects(filepath: str, ldraw_path: str, additional_paths: list[str], color_by_code: dict[int, LDrawColor], settings: GeometrySettings):
     # Create an object for each part in the scene.
@@ -190,7 +203,6 @@ def import_instanced(filepath: str, ldraw_path: str, additional_paths: list[str]
         # Geometry nodes are more reliable than instancing on faces.
         # This also avoids performance overhead from object creation.
         create_geometry_node_instancing(instancer_object, instance_object)
-
 
 def create_geometry_node_instancing(instancer_object: bpy.types.Object, instance_object: bpy.types.Object):
     modifier = instancer_object.modifiers.new(

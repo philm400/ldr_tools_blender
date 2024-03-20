@@ -168,8 +168,6 @@ impl Default for PrimitiveResolution {
 // TODO: Come up with a better name.
 #[derive(Debug)]
 pub struct GeometrySettings {
-    pub import_resolution: String,
-    pub import_stud_type: String,
     pub triangulate: bool,
     pub add_gap_between_parts: bool,
     pub ground_object: bool,
@@ -184,8 +182,6 @@ pub struct GeometrySettings {
 impl Default for GeometrySettings {
     fn default() -> Self {
         Self {
-            import_resolution: Default::default(),
-            import_stud_type: Default::default(),
             triangulate: Default::default(),
             add_gap_between_parts: Default::default(),
             ground_object: Default::default(),
