@@ -13,6 +13,8 @@ from .material import get_material
 
 # TODO: Add type hints for all functions.
 
+global op
+
 def import_ldraw(
         operator: bpy.types.Operator,
         filepath: str,
@@ -26,6 +28,8 @@ def import_ldraw(
         unofficial_parts: bool,
         custom_mesh_path: str,
     ):
+    global op
+    op = operator
     color_by_code = ldr_tools_py.load_color_table(ldraw_path)
 
     settings = GeometrySettings()
@@ -90,10 +94,15 @@ def import_objects(filepath: str, ldraw_path: str, additional_paths: list[str], 
 
 def objectOnGround(obj):
     bpy.ops.object.select_all(action='DESELECT')
-    selectChildren(obj)
+    try:
+        selectChildren(obj)
 
-    minz = min(min((obj2.matrix_world @ v.co).z for v in obj2.data.vertices) for obj2 in bpy.context.selected_objects)
-    bpy.context.scene.objects[obj].matrix_world.translation.z -= minz
+        minz = min(min((obj2.matrix_world @ v.co).z for v in obj2.data.vertices) for obj2 in bpy.context.selected_objects)
+        bpy.context.scene.objects[obj].matrix_world.translation.z -= minz
+    except Exception:
+        op.report({"ERROR"}, "An exception occurred - No vertices found")
+        print("An exception occurred - No vertices found")
+
     bpy.ops.object.select_all(action='DESELECT')
 
 def selectChildren(parent):
