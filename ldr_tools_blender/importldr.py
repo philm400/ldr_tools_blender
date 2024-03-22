@@ -12,7 +12,6 @@ from .ldr_tools_py import LDrawNode, LDrawGeometry, LDrawColor, GeometrySettings
 from .material import get_material
 
 # TODO: Add type hints for all functions.
-worldVertices = [] # collection for all mesh points to define bounding box and align to floor
 
 def import_ldraw(
         operator: bpy.types.Operator,
@@ -85,35 +84,24 @@ def import_objects(filepath: str, ldraw_path: str, additional_paths: list[str], 
         (math.radians(-90.0), 0.0, 0.0), 'XYZ')
     root_obj.scale = (0.01, 0.01, 0.01)
 
-    bpy.context.view_layer.update()
-    for collection in bpy.data.collections:
-        for obj in collection.all_objects:
-            if obj.type == 'MESH':
-                for m in range(0, len(obj.data.vertices)):
-                    vx = obj.matrix_world @ obj.data.vertices[m].co
-                    worldVertices.append(vx) # add globel transformed vertices to array
-    # print(*worldVertices, sep='\n')
-
     if settings.ground_object:
-        objectOnGround(root_obj)
+        bpy.context.view_layer.update()
+        objectOnGround(root_obj.name)
 
-def objectOnGround(root_obj):
-    # Calculate our bounding box in global coordinate space
-        boundingBoxMin = mathutils.Vector((0, 0, 0))
-        boundingBoxMax = mathutils.Vector((0, 0, 0))
+def objectOnGround(obj):
+    bpy.ops.object.select_all(action='DESELECT')
+    selectChildren(obj)
 
-        boundingBoxMin[0] = min(p[0] for p in worldVertices)
-        boundingBoxMin[1] = min(p[1] for p in worldVertices)
-        boundingBoxMin[2] = min(p[2] for p in worldVertices)
-        boundingBoxMax[0] = max(p[0] for p in worldVertices)
-        boundingBoxMax[1] = max(p[1] for p in worldVertices)
-        boundingBoxMax[2] = max(p[2] for p in worldVertices)
+    minz = min(min((obj2.matrix_world @ v.co).z for v in obj2.data.vertices) for obj2 in bpy.context.selected_objects)
+    bpy.context.scene.objects[obj].matrix_world.translation.z -= minz
+    bpy.ops.object.select_all(action='DESELECT')
 
-        vcentre = (boundingBoxMin + boundingBoxMax) * 0.5
-        offsetToCentreModel = mathutils.Vector((-vcentre.x, -vcentre.y, -boundingBoxMin.z))
-        # if Options.positionObjectOnGroundAtOrigin:
-        print("Object placed on ground")
-        root_obj.location += offsetToCentreModel
+def selectChildren(parent):
+    for obj in bpy.context.scene.objects:
+        if obj.parent == bpy.context.scene.objects[parent]:
+            obj.select_set(obj.type == "MESH")
+            if obj.type == "EMPTY":
+                selectChildren(obj.name)
 
 def add_nodes(node: LDrawNode,
               geometry_cache: dict[str, LDrawGeometry],
