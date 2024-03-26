@@ -10,6 +10,7 @@ from . import ldr_tools_py
 from .ldr_tools_py import LDrawNode, LDrawGeometry, LDrawColor, GeometrySettings
 
 from .material import get_material
+from .environment import set_enviroment
 
 # TODO: Add type hints for all functions.
 
@@ -27,11 +28,11 @@ def import_ldraw(
         ground_object: bool,
         unofficial_parts: bool,
         custom_mesh_path: str,
+        environment_settings: bool,
     ):
     global op
     op = operator
     color_by_code = ldr_tools_py.load_color_table(ldraw_path)
-
     settings = GeometrySettings()
     settings.primitive_resolution = match_primitive(primitive_resolution)
     settings.stud_type = match_stud(stud_type)
@@ -51,7 +52,7 @@ def import_ldraw(
                          additional_paths, custom_mesh_path, color_by_code, settings)
     elif instance_type == 'LinkedDuplicates':
         import_objects(filepath, ldraw_path, additional_paths, custom_mesh_path,
-                       color_by_code, settings)
+                       color_by_code, settings, environment_settings)
 
 def match_stud(stud_type) -> any:
     match stud_type:
@@ -68,7 +69,7 @@ def match_primitive(primitive_resolution) -> any:
         case 'High': return ldr_tools_py.PrimitiveResolution.High
         case _: return ldr_tools_py.PrimitiveResolution.Normal
 
-def import_objects(filepath: str, ldraw_path: str, additional_paths: list[str], custom_mesh_path: str, color_by_code: dict[int, LDrawColor], settings: GeometrySettings):
+def import_objects(filepath: str, ldraw_path: str, additional_paths: list[str], custom_mesh_path: str, color_by_code: dict[int, LDrawColor], settings: GeometrySettings, environment_settings: dict):
     # Create an object for each part in the scene.
     # This still uses instances the mesh data blocks for reduced memory usage.
     blender_mesh_cache = {}
@@ -91,6 +92,12 @@ def import_objects(filepath: str, ldraw_path: str, additional_paths: list[str], 
     if settings.ground_object:
         bpy.context.view_layer.update()
         objectOnGround(root_obj.name)
+
+    # check and set any environment properties 
+    set_enviroment(
+        environment_settings,
+        root_obj.name
+    )
 
 def objectOnGround(obj):
     bpy.ops.object.select_all(action='DESELECT')
@@ -231,31 +238,25 @@ def create_geometry_node_instancing(instancer_object: bpy.types.Object, instance
     links.new(instance_info.outputs["Geometry"],
               instance_points.inputs["Instance"])
 
-    # Scale instances from the custom color attribute.
+    # Scale instances from the custom attribute.
     scale_attribute = nodes.new(type="GeometryNodeInputNamedAttribute")
     scale_attribute.data_type = 'FLOAT_VECTOR'
     scale_attribute.inputs["Name"].default_value = "instance_scale"
     links.new(scale_attribute.outputs["Attribute"],
               instance_points.inputs["Scale"])
 
-    # Rotate instances from the custom color attributes.
-    rotation = nodes.new(type="FunctionNodeRotateEuler")
-    rotation.type = 'AXIS_ANGLE'
-
+    # Rotate instances from the custom attributes.
     rot_axis = nodes.new(type="GeometryNodeInputNamedAttribute")
     rot_axis.data_type = 'FLOAT_VECTOR'
     rot_axis.inputs["Name"].default_value = "instance_rotation_axis"
-    links.new(rot_axis.outputs["Attribute"], rotation.inputs["Axis"])
 
     rot_angle = nodes.new(type="GeometryNodeInputNamedAttribute")
     rot_angle.data_type = 'FLOAT'
     rot_angle.inputs["Name"].default_value = "instance_rotation_angle"
 
-    separate = nodes.new(type="ShaderNodeSeparateXYZ")
-    # The second output is the float attribute when selecting a different type.
-    links.new(rot_angle.outputs[1], separate.inputs["Vector"])
-    links.new(separate.outputs["X"], rotation.inputs["Angle"])
-
+    rotation = nodes.new(type="FunctionNodeAxisAngleToRotation")
+    links.new(rot_axis.outputs["Attribute"], rotation.inputs["Axis"])
+    links.new(rot_angle.outputs["Attribute"], rotation.inputs["Angle"])
     links.new(rotation.outputs["Rotation"], instance_points.inputs["Rotation"])
 
 

@@ -24,6 +24,7 @@ def menuImport(self, context):
 classes = [operator.ImportOperator,
            operator.GEOMETRY_OPTIONS_PT_Panel,
            operator.PARTS_OPTIONS_PT_Panel,
+           operator.ENVIRONMENT_OPTIONS_PT_Panel,
            operator.LIST_OT_NewItem,
            operator.LIST_OT_DeleteItem,
            operator.LDRAW_PATH_LIST_ITEM,

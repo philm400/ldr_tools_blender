@@ -1,7 +1,8 @@
 import os
 import json
 import bpy
-from bpy.props import StringProperty, EnumProperty, BoolProperty
+import numpy
+from bpy.props import StringProperty, EnumProperty, BoolProperty, FloatVectorProperty
 from bpy_extras.io_utils import ImportHelper
 from typing import Any
 import platform
@@ -67,6 +68,13 @@ class Preferences():
         self.resolution = 'Normal'
         self.stud_logo = 'Normal'
         self.unofficial_parts = True
+        self.add_camera = False
+        self.add_env_lighting = False
+        self.remove_lights = False
+        self.add_ground_plane = False
+        self.solid_floor_bg = False
+        self.transparent_bg = False
+        self.bg_color = [1,1,1,1]
 
     def from_dict(self, dict: dict[str, Any]):
         # Fill in defaults for any missing values.
@@ -86,6 +94,20 @@ class Preferences():
             'resolution', defaults.resolution)
         self.stud_logo = dict.get(
             'stud_logo', defaults.stud_logo)
+        self.add_camera = dict.get(
+            'add_camera', defaults.add_camera)
+        self.add_env_lighting = dict.get(
+            'add_env_lighting', defaults.add_env_lighting)
+        self.remove_lights = dict.get(
+            'remove_lights', defaults.remove_lights)
+        self.add_ground_plane = dict.get(
+            'add_ground_plane', defaults.add_ground_plane)
+        self.solid_floor_bg = dict.get(
+            'solid_floor_bg', defaults.solid_floor_bg)
+        self.transparent_bg = dict.get(
+            'transparent_bg', defaults.transparent_bg)
+        self.bg_color = dict.get(
+            'bg_color', defaults.bg_color)
 
     def save(self):
         with open(Preferences.preferences_path, 'w+') as file:
@@ -280,6 +302,51 @@ class ImportOperator(bpy.types.Operator, ImportHelper):
         )
     ) # type: ignore
 
+    add_camera: BoolProperty(
+        name="Add a Camera",
+        description="Camera will be positioned and targeted towards the imported object",
+        default=preferences.add_camera
+    ) # type: ignore
+
+    add_env_lighting: BoolProperty(
+        name="Add HDRI Environment",
+        description="Add HDRI environment lighting",
+        default=preferences.add_env_lighting
+    ) # type: ignore
+
+    remove_lights: BoolProperty(
+        name="Remove Scene Lights",
+        description="Remove all existing scene light objects",
+        default=preferences.remove_lights
+    ) # type: ignore
+
+    add_ground_plane: BoolProperty(
+        name="Add Ground Plane",
+        description="Adds large scale ground plane",
+        default=preferences.add_ground_plane
+    ) # type: ignore
+
+    solid_floor_bg: BoolProperty(
+        name="Make Floor and background same color",
+        description="Makes the ground plane a shadow catcher and scene film transparent",
+        default=preferences.solid_floor_bg
+    ) # type: ignore
+
+    transparent_bg: BoolProperty(
+        name="Transparent Background",
+        description="Makes ground plane transparent but a shadow catcher, along with transparent world environment",
+        default=preferences.transparent_bg
+    ) # type: ignore
+
+    bg_color: FloatVectorProperty(
+        name = "Background Color",
+        subtype = "COLOR",
+        default=preferences.bg_color,
+        size = 4,
+        min = 0.0,
+        max = 1.0
+    ) # type: ignore
+
     def draw(self, context):
         layout = self.layout
         layout.use_property_split = True
@@ -295,11 +362,31 @@ class ImportOperator(bpy.types.Operator, ImportHelper):
         ImportOperator.preferences.ground_object = self.ground_object
         ImportOperator.preferences.resolution = self.resolution
         ImportOperator.preferences.stud_logo = self.stud_logo
+        ImportOperator.preferences.add_camera = self.add_camera
+        ImportOperator.preferences.add_env_lighting = self.add_env_lighting
+        ImportOperator.preferences.remove_lights = self.remove_lights
+        ImportOperator.preferences.add_ground_plane = self.add_ground_plane
+        ImportOperator.preferences.solid_floor_bg = self.solid_floor_bg
+        ImportOperator.preferences.transparent_bg = self.transparent_bg
+        # Cast self.bg_color <bpy_prop_array> to numpy array as a list serialize
+        ar = numpy.array(self.bg_color)
+        bg_col_array = ar.tolist()
+        ImportOperator.preferences.bg_color = bg_col_array
 
         data = []
         for i, item in enumerate(context.scene.ldraw_path_list, 1):
             data.append(item.name)
         ImportOperator.preferences.additional_paths = data
+
+        env_settings = {
+            "add_camera": self.add_camera,
+            "add_env_lighting": self.add_env_lighting,
+            "remove_lights": self.remove_lights,
+            "add_ground_plane": self.add_ground_plane,
+            "solid_floor_bg": self.solid_floor_bg,
+            "transparent_bg": self.transparent_bg,
+            "bg_color": bg_col_array,
+        }
 
         import time
         start = time.time()
@@ -315,9 +402,10 @@ class ImportOperator(bpy.types.Operator, ImportHelper):
             self.ground_object,
             self.unofficial_parts,
             custom_mesh_dir,
+            env_settings
         )
         end = time.time()
-        print(f'Import: {end - start}')
+        print(f'Import: {round(end - start, 3)}s')
 
         # Save preferences to disk for loading next time.
         ImportOperator.preferences.save()
@@ -417,3 +505,55 @@ class PARTS_OPTIONS_PT_Panel(bpy.types.Panel):
             item = scene.ldraw_path_list[scene.ldraw_path_list_index]
             row = layout.row()
             row.prop(item, "name")
+
+
+class ENVIRONMENT_OPTIONS_PT_Panel(bpy.types.Panel):
+    bl_space_type = 'FILE_BROWSER'
+    bl_region_type = 'TOOL_PROPS'
+    bl_label = "Environment Setup"
+    bl_idname = "ENVIRONMENT_OPTIONS_PT_Panel"
+
+    @classmethod
+    def poll(cls, context): 
+        sfile =    context.space_data
+        operator = sfile.active_operator
+        return operator.bl_idname == "IMPORT_SCENE_OT_importldr"
+    
+    def draw(self, context):
+        scene = context.scene
+        sfile = context.space_data
+        operator = sfile.active_operator
+
+        layout = self.layout
+        layout.use_property_split = False
+        layout.use_property_decorate = False
+
+        row = layout.row()
+        row.prop(operator, "add_camera")
+
+        row = layout.row()
+        row.prop(operator, "add_env_lighting")
+
+        row = layout.row()
+        row.separator(factor=3)
+        col = row.column()
+        subrow = col.row()
+        subrow.prop(operator, "remove_lights")
+
+        row = layout.row()
+        row.prop(operator, "add_ground_plane")
+
+        row = layout.row()
+        row.separator(factor=3)
+        col = row.column()
+        subrow = col.row()
+        subrow.enabled = operator.add_ground_plane and not operator.solid_floor_bg
+        subrow.prop(operator, "transparent_bg")
+
+        subrow = col.row()
+        subrow.enabled = operator.add_ground_plane
+        subrow.prop(operator, "solid_floor_bg")
+
+        subrow = col.row()
+        subrow.enabled = operator.add_ground_plane and operator.solid_floor_bg
+        subrow.prop(operator, "bg_color")
