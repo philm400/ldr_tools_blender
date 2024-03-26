@@ -92,6 +92,11 @@ def import_objects(filepath: str, ldraw_path: str, additional_paths: list[str], 
     if settings.ground_object:
         bpy.context.view_layer.update()
         objectOnGround(root_obj.name)
+    
+    # Normalise object and child object scales to 1.0
+    applyScaleTransform(
+        root_obj.name
+    )
 
     # check and set any environment properties 
     set_enviroment(
@@ -102,7 +107,7 @@ def import_objects(filepath: str, ldraw_path: str, additional_paths: list[str], 
 def objectOnGround(obj):
     bpy.ops.object.select_all(action='DESELECT')
     try:
-        selectChildren(obj)
+        selectMeshChildren(obj)
 
         minz = min(min((obj2.matrix_world @ v.co).z for v in obj2.data.vertices) for obj2 in bpy.context.selected_objects)
         bpy.context.scene.objects[obj].matrix_world.translation.z -= minz
@@ -112,12 +117,28 @@ def objectOnGround(obj):
 
     bpy.ops.object.select_all(action='DESELECT')
 
-def selectChildren(parent):
+def applyScaleTransform(root_obj):
+    bpy.ops.object.select_all(action='DESELECT')
+    obj = bpy.context.scene.objects[root_obj]
+    obj.select_set(True)
+    selectAllChildren(root_obj)
+    bpy.ops.object.make_single_user(type='SELECTED_OBJECTS', object=True, obdata=True, material=False)
+    bpy.ops.object.transform_apply(scale=True)
+    bpy.ops.object.select_all(action='DESELECT')
+
+def selectMeshChildren(parent):
     for obj in bpy.context.scene.objects:
         if obj.parent == bpy.context.scene.objects[parent]:
             obj.select_set(obj.type == "MESH")
             if obj.type == "EMPTY":
-                selectChildren(obj.name)
+                selectMeshChildren(obj.name)
+
+def selectAllChildren(parent): 
+    for obj in bpy.context.scene.objects:
+        if obj.parent == bpy.context.scene.objects[parent]:
+            obj.select_set(True)
+            if obj.type == "EMPTY":
+                selectAllChildren(obj.name)
 
 def add_nodes(node: LDrawNode,
               geometry_cache: dict[str, LDrawGeometry],
