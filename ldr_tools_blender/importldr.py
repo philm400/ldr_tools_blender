@@ -1,6 +1,7 @@
 import bpy
 import numpy as np
 import mathutils
+from mathutils import Vector
 import math
 import os
 
@@ -108,8 +109,15 @@ def objectOnGround(obj):
     bpy.ops.object.select_all(action='DESELECT')
     try:
         selectMeshChildren(obj)
-
-        minz = min(min((obj2.matrix_world @ v.co).z for v in obj2.data.vertices) for obj2 in bpy.context.selected_objects)
+        bbox_verts = []
+        for obj2 in bpy.context.selected_objects:
+            m_vert = []
+            for v in obj2.bound_box:
+                matrix = obj2.matrix_world
+                vert = matrix @ Vector(v)
+                m_vert.append(vert[2])
+            bbox_verts.append(min(m_vert))
+        minz = min(bbox_verts)
         bpy.context.scene.objects[obj].matrix_world.translation.z -= minz
     except Exception:
         op.report({"ERROR"}, "An exception occurred - No vertices found")
