@@ -163,9 +163,16 @@ def add_camera(environment_settings, file_name):
     selectChildren(file_name)
 
     def get_min(axis):
-        return min(min((obj2.matrix_world @ v.co)[axis] for v in obj2.data.vertices) for obj2 in bpy.context.selected_objects)
+        return min(v[axis] for v in bbox_verts)
     def get_max(axis):
-        return max(max((obj2.matrix_world @ v.co)[axis] for v in obj2.data.vertices) for obj2 in bpy.context.selected_objects)
+        return max(v[axis] for v in bbox_verts)
+
+    bbox_verts = []
+
+    for obj2 in bpy.context.selected_objects:
+        for v in obj2.bound_box:
+            matrix = obj2.matrix_world
+            bbox_verts.append(matrix @ Vector(v))
 
     # Get Min/Max vertices of selected objects
     vert_min = np.array([get_min(0), get_min(1), get_min(2)])
