@@ -122,8 +122,8 @@ def applyScaleTransform(root_obj):
     obj = bpy.context.scene.objects[root_obj]
     obj.select_set(True)
     selectAllChildren(root_obj)
-    bpy.ops.object.make_single_user(type='SELECTED_OBJECTS', object=True, obdata=True, material=False)
-    bpy.ops.object.transform_apply(scale=True)
+    # apply Scale transform to Delta - Avoids having to make objects single user
+    bpy.ops.object.transforms_to_deltas(mode="SCALE")
     bpy.ops.object.select_all(action='DESELECT')
 
 def selectMeshChildren(parent):
