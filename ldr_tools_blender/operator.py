@@ -233,6 +233,12 @@ class ImportOperator(bpy.types.Operator, ImportHelper):
     bl_region_type = "WINDOW"
     bl_options = {'REGISTER', 'UNDO', 'PRESET'}
 
+    def __init__(self):
+        pass
+
+    def __del__(self):
+        pass
+
     preferences = Preferences.load()
 
     # TODO: Consistent usage of "" vs ''
@@ -477,8 +483,29 @@ class PARTS_OPTIONS_PT_Panel(bpy.types.Panel):
         row = layout.row()
         row.prop(operator, "unofficial_parts")
 
-        row = layout.row()
-        row.label(text="Additional Library Paths:")
+
+class PARTS_SUB_OPTIONS_PT_Panel(bpy.types.Panel):
+    bl_space_type = 'FILE_BROWSER'
+    bl_region_type = 'TOOL_PROPS'
+    bl_label = "Additional Library Paths"
+    bl_idname = "PARTS_SUB_OPTIONS_PT_Panel"
+    bl_parent_id = "PARTS_OPTIONS_PT_Panel"
+    bl_options = {'DEFAULT_CLOSED'}
+
+    @classmethod
+    def poll(cls, context): 
+        sfile =    context.space_data
+        operator = sfile.active_operator
+        return operator.bl_idname == "IMPORT_SCENE_OT_importldr"
+    
+    def draw(self, context):
+        scene = context.scene
+        sfile = context.space_data
+        operator = sfile.active_operator
+
+        layout = self.layout
+        layout.use_property_split = True
+        layout.use_property_decorate = False
 
         row = layout.row()
         
@@ -500,7 +527,7 @@ class PARTS_OPTIONS_PT_Panel(bpy.types.Panel):
         col.operator('ldraw_path_list.move_item', text='', icon='TRIA_UP').direction = 'UP'
         col.separator(factor=0.2)
         col.operator('ldraw_path_list.move_item', text='', icon='TRIA_DOWN').direction = 'DOWN'
-        
+
         if scene.ldraw_path_list_index >= 0 and scene.ldraw_path_list:
             item = scene.ldraw_path_list[scene.ldraw_path_list_index]
             row = layout.row()

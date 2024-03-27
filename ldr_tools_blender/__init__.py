@@ -24,14 +24,15 @@ def menuImport(self, context):
 classes = [operator.ImportOperator,
            operator.GEOMETRY_OPTIONS_PT_Panel,
            operator.PARTS_OPTIONS_PT_Panel,
-           operator.ENVIRONMENT_OPTIONS_PT_Panel,
+           operator.PARTS_SUB_OPTIONS_PT_Panel,
            operator.LIST_OT_NewItem,
            operator.LIST_OT_DeleteItem,
            operator.LDRAW_PATH_LIST_ITEM,
            operator.LDRAW_PATH_UL_List,
            operator.LDRAW_PATH_LIST_OT_NewItem,
            operator.LDRAW_PATH_LIST_OT_DeleteItem,
-           operator.LDRAW_PATH_LIST_OT_MoveItem]
+           operator.LDRAW_PATH_LIST_OT_MoveItem,
+           operator.ENVIRONMENT_OPTIONS_PT_Panel,]
 
 @persistent
 def import_paths():
@@ -55,7 +56,7 @@ def register():
 
     bpy.types.TOPBAR_MT_file_import.append(menuImport)
 
-    Timer(0.5, import_paths, ()).start() # Wait 0.5 seconds for scene to be updated in the background 
+    Timer(1, import_paths, ()).start() # Wait 1 second for scene to be updated in the background 
 
 def unregister():
     for cls in classes:
