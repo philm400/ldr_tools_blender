@@ -9,6 +9,7 @@ echo $'\e[38;5;240m==========================================='
 # Set temporary $PATH for this session to your Blender addons folder for this addon
 BLENDER_PATH="$HOME/Library/Application Support/Blender/4.0/scripts/addons/ldr_tools_blender"
 PROJECT_FILES=("__init__.py" "colors.py" "importldr.py" "ldr_tools_py.so" "material.py" "operator.py")
+export PYO3_CROSS_PYTHON_VERSION=3.10
 
 # Build the Pyo3 library
 PYO3_PYTHON="/Applications/Blender.app/Contents/Resources/4.0/python/bin/python3.10" cargo build --release

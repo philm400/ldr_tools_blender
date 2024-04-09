@@ -132,7 +132,7 @@ class LDRAW_PATH_LIST_ITEM(bpy.types.PropertyGroup):
         name="File Path:",
         description="Local file path for an instance of LDraw or other parts",
         default="New path...."
-    )
+    ) # type: ignore
 
 class LDRAW_PATH_UL_List(bpy.types.UIList):
     """The UIList - Plain and simple, no filtering option"""
@@ -173,7 +173,7 @@ class LDRAW_PATH_LIST_OT_MoveItem(bpy.types.Operator):
     
     bl_idname = "ldraw_path_list.move_item"
     bl_label = "Move an item in the list"
-    direction: EnumProperty(items=(('UP', 'Up', ""), ('DOWN', 'Down', ""),))
+    direction: EnumProperty(items=(('UP', 'Up', ""), ('DOWN', 'Down', ""),)) # type: ignore
     
     @classmethod
     def poll(cls, context): 
@@ -196,48 +196,13 @@ class LDRAW_PATH_LIST_OT_MoveItem(bpy.types.Operator):
         self.move_index()
         return{'FINISHED'}
 
-class LIST_OT_NewItem(bpy.types.Operator):
-    """Add a new item to the list."""
-
-    bl_idname = "additional_paths.new_item"
-    bl_label = "Add a new item"
-
-    def execute(self, context):
-        # TODO: Don't store the preferences in the operator itself?
-        # TODO: singleton pattern?
-        p = context.scene.ldr_path_to_add
-        ImportOperator.preferences.additional_paths.append(p)
-        return {'FINISHED'}
-
-
-class LIST_OT_DeleteItem(bpy.types.Operator):
-    """Delete the selected item from the list."""
-
-    bl_idname = "additional_paths.delete_item"
-    bl_label = "Deletes an item"
-
-    @classmethod
-    def poll(cls, context):
-        return ImportOperator.preferences.additional_paths
-
-    def execute(self, context):
-        ImportOperator.preferences.additional_paths.pop()
-        return {'FINISHED'}
-
-
 class ImportOperator(bpy.types.Operator, ImportHelper):
     bl_idname = "import_scene.importldr"
     bl_description = "Import LDR (.mpd/.ldr/.dat)"
     bl_label = "Import LDR"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
-    bl_options = {'REGISTER', 'UNDO', 'PRESET'}
-
-    def __init__(self):
-        pass
-
-    def __del__(self):
-        pass
+    bl_options = {"REGISTER", "UNDO", "PRESET"}
 
     preferences = Preferences.load()
 
@@ -246,7 +211,7 @@ class ImportOperator(bpy.types.Operator, ImportHelper):
     filename_ext = ".ldr"
     filter_glob: StringProperty(
         default="*.mpd;*.ldr;*.dat",
-        options={'HIDDEN'}
+        options={"HIDDEN"}
     ) # type: ignore
 
     ldraw_path: StringProperty(
@@ -257,7 +222,7 @@ class ImportOperator(bpy.types.Operator, ImportHelper):
     instance_type: EnumProperty(
         name="Instance Type",
         items=[
-            ('LinkedDuplicates', "Linked Duplicates",
+            ("LinkedDuplicates", "Linked Duplicates",
              "Objects with linked mesh data blocks (Alt+D). Easy to edit."),
             #('GeometryNodes', "Geometry Nodes",
             # "Geometry node instances on an instancer mesh. Faster imports for large scenes but #harder to edit.")
@@ -353,10 +318,22 @@ class ImportOperator(bpy.types.Operator, ImportHelper):
         max = 1.0
     ) # type: ignore
 
+    def invoke(self, context, event):
+        # When modal is triggered rebuild UIList items
+        context.scene.ldraw_path_list.clear()
+        context.scene.ldraw_path_list_index = 0
+        for prop in self.preferences.additional_paths:
+            context.scene.ldraw_path_list.add()
+            len_i = len(context.scene.ldraw_path_list)
+            context.scene.ldraw_path_list_index = len_i-1
+            new_item = context.scene.ldraw_path_list[len_i-1]
+            new_item.name = prop
+        context.window_manager.fileselect_add(self)
+        return {'RUNNING_MODAL'}
+
     def draw(self, context):
         layout = self.layout
         layout.use_property_split = True
-
         layout.label(text="LDR Import Options", icon='MESH_DATA')
 
     def execute(self, context):
@@ -465,7 +442,6 @@ class PARTS_OPTIONS_PT_Panel(bpy.types.Panel):
         return operator.bl_idname == "IMPORT_SCENE_OT_importldr"
     
     def draw(self, context):
-        scene = context.scene
         sfile = context.space_data
         operator = sfile.active_operator
 
@@ -500,8 +476,6 @@ class PARTS_SUB_OPTIONS_PT_Panel(bpy.types.Panel):
     
     def draw(self, context):
         scene = context.scene
-        sfile = context.space_data
-        operator = sfile.active_operator
 
         layout = self.layout
         layout.use_property_split = True
@@ -537,7 +511,7 @@ class PARTS_SUB_OPTIONS_PT_Panel(bpy.types.Panel):
 class ENVIRONMENT_OPTIONS_PT_Panel(bpy.types.Panel):
     bl_space_type = 'FILE_BROWSER'
     bl_region_type = 'TOOL_PROPS'
-    bl_label = "Environment Setup"
+    bl_label = "Scene / Environment Setup"
     bl_idname = "ENVIRONMENT_OPTIONS_PT_Panel"
 
     @classmethod
@@ -547,7 +521,6 @@ class ENVIRONMENT_OPTIONS_PT_Panel(bpy.types.Panel):
         return operator.bl_idname == "IMPORT_SCENE_OT_importldr"
     
     def draw(self, context):
-        scene = context.scene
         sfile = context.space_data
         operator = sfile.active_operator
 

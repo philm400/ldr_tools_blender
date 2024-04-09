@@ -11,7 +11,7 @@ from . import ldr_tools_py
 from .ldr_tools_py import LDrawNode, LDrawGeometry, LDrawColor, GeometrySettings
 
 from .material import get_material
-from .environment import set_enviroment
+from .environment import set_enviroment, selectLDR
 
 # TODO: Add type hints for all functions.
 
@@ -45,15 +45,20 @@ def import_ldraw(
     # Required for calculated normals.
     settings.weld_vertices = True
 
-    #print(repr(settings))
+    obj_name = os.path.split(filepath)
 
     # TODO: Add an option to make the lowest point have a height of 0 using obj.dimensions?
-    if instance_type == 'GeometryNodes':
+    if instance_type == 'GeometryNodes' and obj_name[1] != "":
         import_instanced(filepath, ldraw_path,
                          additional_paths, custom_mesh_path, color_by_code, settings)
-    elif instance_type == 'LinkedDuplicates':
+    elif instance_type == 'LinkedDuplicates' and obj_name[1] != "":
         import_objects(filepath, ldraw_path, additional_paths, custom_mesh_path,
                        color_by_code, settings, environment_settings)
+    else:
+        set_enviroment(
+            environment_settings,
+            obj_name[1]
+        )
 
 def match_stud(stud_type) -> any:
     match stud_type:
@@ -108,7 +113,7 @@ def import_objects(filepath: str, ldraw_path: str, additional_paths: list[str], 
 def objectOnGround(obj):
     bpy.ops.object.select_all(action='DESELECT')
     try:
-        selectMeshChildren(obj)
+        selectLDR(obj)
         bbox_verts = []
         for obj2 in bpy.context.selected_objects:
             m_vert = []
@@ -129,24 +134,10 @@ def applyScaleTransform(root_obj):
     bpy.ops.object.select_all(action='DESELECT')
     obj = bpy.context.scene.objects[root_obj]
     obj.select_set(True)
-    selectAllChildren(root_obj)
+    selectLDR(root_obj, ["MESH","EMPTY"])
     # apply Scale transform to Delta - Avoids having to make objects single user
     bpy.ops.object.transforms_to_deltas(mode="SCALE")
     bpy.ops.object.select_all(action='DESELECT')
-
-def selectMeshChildren(parent):
-    for obj in bpy.context.scene.objects:
-        if obj.parent == bpy.context.scene.objects[parent]:
-            obj.select_set(obj.type == "MESH")
-            if obj.type == "EMPTY":
-                selectMeshChildren(obj.name)
-
-def selectAllChildren(parent): 
-    for obj in bpy.context.scene.objects:
-        if obj.parent == bpy.context.scene.objects[parent]:
-            obj.select_set(True)
-            if obj.type == "EMPTY":
-                selectAllChildren(obj.name)
 
 def add_nodes(node: LDrawNode,
               geometry_cache: dict[str, LDrawGeometry],

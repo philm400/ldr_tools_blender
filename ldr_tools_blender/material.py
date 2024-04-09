@@ -58,7 +58,7 @@ def get_material(color_by_code: dict[int, LDrawColor], code: int, is_slope: bool
             # Use a less accurate SSS method instead.
             bsdf.inputs['Subsurface Radius'].default_value = [r, g, b]
             bsdf.inputs['Subsurface Weight'].default_value = 1.0
-            bsdf.inputs['Subsurface Scale'].default_value = 0.025
+            bsdf.inputs['Subsurface Scale'].default_value = 0.0125
 
             # Procedural roughness.
             roughness_node = create_node_group(
@@ -123,10 +123,6 @@ def get_material(color_by_code: dict[int, LDrawColor], code: int, is_slope: bool
                 else:
                     roughness_node.inputs['Min'].default_value = 0.01
                     roughness_node.inputs['Max'].default_value = 0.15
-
-                # Disable shadow casting for transparent materials.
-                # This avoids making transparent parts too dark.
-                make_shadows_transparent(material, bsdf)
 
             # Procedural normals.
             normals = create_node_group(
@@ -201,24 +197,6 @@ def create_node_group(material: bpy.types.Material, name: str, create_group: Cal
     node = material.node_tree.nodes.new(type='ShaderNodeGroup')
     node.node_tree = node_tree
     return node
-
-
-def make_shadows_transparent(material, bsdf):
-    mix_shader = material.node_tree.nodes.new('ShaderNodeMixShader')
-    light_path = material.node_tree.nodes.new('ShaderNodeLightPath')
-    transparent_bsdf = material.node_tree.nodes.new(
-        'ShaderNodeBsdfTransparent')
-    output_node = material.node_tree.nodes.get('Material Output')
-
-    material.node_tree.links.new(
-        light_path.outputs['Is Shadow Ray'], mix_shader.inputs['Fac'])
-    material.node_tree.links.new(
-        bsdf.outputs['BSDF'], mix_shader.inputs[1])
-    material.node_tree.links.new(
-        transparent_bsdf.outputs['BSDF'], mix_shader.inputs[2])
-
-    material.node_tree.links.new(
-        mix_shader.outputs['Shader'], output_node.inputs['Surface'])
 
 
 def create_roughness_node_group(name: str) -> bpy.types.NodeTree:
@@ -305,7 +283,7 @@ def create_normals_node_group(name: str) -> bpy.types.NodeTree:
     output_node = nodes.new('NodeGroupOutput')
 
     bevel = nodes.new('ShaderNodeBevel')
-    bevel.inputs['Radius'].default_value = 0.01
+    bevel.inputs['Radius'].default_value = 0.005
 
     # TODO: Set node positions.
     # Faces of bricks are never perfectly flat.
@@ -346,18 +324,18 @@ def create_slope_normals_node_group(name: str) -> bpy.types.NodeTree:
     output_node = nodes.new('NodeGroupOutput')
 
     bevel = nodes.new('ShaderNodeBevel')
-    bevel.inputs['Radius'].default_value = 0.01
+    bevel.inputs['Radius'].default_value = 0.005
 
     # TODO: Set node positions.
     noise = nodes.new('ShaderNodeTexNoise')
-    noise.inputs['Scale'].default_value = 125.0
+    noise.inputs['Scale'].default_value = 5.5
     noise.inputs['Detail'].default_value = 3.0
-    noise.inputs['Roughness'].default_value = 0.5
+    noise.inputs['Roughness'].default_value = 0.6
     noise.inputs['Lacunarity'].default_value = 2.0
 
     bump = nodes.new('ShaderNodeBump')
-    bump.inputs['Strength'].default_value = 0.5
-    bump.inputs['Distance'].default_value = 0.005
+    bump.inputs['Strength'].default_value = 0.2
+    bump.inputs['Distance'].default_value = 0.007
 
     tex_coord = nodes.new('ShaderNodeTexCoord')
 

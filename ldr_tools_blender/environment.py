@@ -28,7 +28,7 @@ def set_enviroment(
     if environment_settings["remove_lights"]:
         remove_lights(environment_settings)
 
-    if environment_settings["add_camera"]:
+    if environment_settings["add_camera"] and file_name != "":
         add_camera(environment_settings, file_name)
 
 def add_plane(environment_settings):
@@ -132,22 +132,13 @@ def remove_lights(environment_settings):
     #delete        
     bpy.ops.object.delete()
 
-def selectChildren(parent):
-    for obj in bpy.context.scene.objects:
-        if obj.parent == bpy.context.scene.objects[parent]:
-            obj.select_set(obj.type == "MESH")
-            if obj.type == "EMPTY":
-                selectChildren(obj.name)
-
 def add_camera(environment_settings, file_name):
-    context = bpy.context
-
     # create the first camera
-    cam1 = bpy.data.cameras.new("Camera - Lego")
+    cam1 = bpy.data.cameras.new("Camera - LDR")
     cam1.lens = 53 # 53mm lens > reduce this down to 50mm at the end to create margins
 
     # create the first camera object
-    cam_obj1 = bpy.data.objects.new("Camera - Lego", cam1)
+    cam_obj1 = bpy.data.objects.new("Camera - LDR", cam1)
     cam_obj1.location = (-4.327, -5.536, 2.14)
     cam_obj1.rotation_euler = mathutils.Euler((math.radians(77.1), 0, math.radians(-57.0)), 'XYZ')
     bpy.context.scene.collection.children['Collection'].objects.link(cam_obj1)
@@ -159,8 +150,8 @@ def add_camera(environment_settings, file_name):
         region.view_perspective = 'CAMERA'
     
     bpy.ops.object.select_all(action='DESELECT')
-
-    selectChildren(file_name)
+    # select objects in LDR file
+    selectLDR(file_name)
 
     def get_min(axis):
         return min(v[axis] for v in bbox_verts)
@@ -184,7 +175,7 @@ def add_camera(environment_settings, file_name):
 
     bpy.ops.object.select_all(action='DESELECT')
 
-    # draw box
+    # draw cube faces between vertices
     faces = [
         (0, 1, 3, 2),
         (0, 1, 5, 4),
@@ -202,8 +193,8 @@ def add_camera(environment_settings, file_name):
     bpy.context.view_layer.update()
     bpy.context.collection.objects.link(mesh_obj)
 
-    camera = bpy.data.cameras["Camera - Lego"]
-    bpy.context.scene.camera = bpy.data.objects["Camera - Lego"]
+    camera = bpy.data.cameras["Camera - LDR"]
+    bpy.context.scene.camera = bpy.data.objects["Camera - LDR"]
     mesh_obj.select_set(True)
     bpy.ops.view3d.camera_to_view_selected()
     mesh_obj.hide_set(True)
@@ -215,3 +206,11 @@ def add_camera(environment_settings, file_name):
     objs.remove(objs["cube_object"], do_unlink=True)
     mesh = bpy.data.meshes["cube_data"]
     bpy.data.meshes.remove(mesh)
+
+
+def selectLDR(parent, type=["MESH"]): 
+    for obj in bpy.context.scene.objects:
+        if obj.parent == bpy.context.scene.objects[parent]:
+            obj.select_set(obj.type in type)
+            if obj.type == "EMPTY":
+                selectLDR(obj.name, type)
