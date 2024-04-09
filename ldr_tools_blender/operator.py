@@ -129,9 +129,9 @@ class Preferences():
 class LDRAW_PATH_LIST_ITEM(bpy.types.PropertyGroup): 
     """Group of properties representing an item in the list."""
     name: StringProperty(
-        name="File Path:",
+        name="File Path",
         description="Local file path for an instance of LDraw or other parts",
-        default="New path...."
+        default="/New path/...."
     ) # type: ignore
 
 class LDRAW_PATH_UL_List(bpy.types.UIList):
@@ -144,7 +144,7 @@ class LDRAW_PATH_UL_List(bpy.types.UIList):
 class LDRAW_PATH_LIST_OT_NewItem(bpy.types.Operator): 
     """Add a new item to the list."""     
     bl_idname = "ldraw_path_list.new_item"
-    bl_label = "Add a new item"
+    bl_label = "Add new path"
     
     def execute(self, context): 
         context.scene.ldraw_path_list.add()
@@ -155,7 +155,7 @@ class LDRAW_PATH_LIST_OT_NewItem(bpy.types.Operator):
 class LDRAW_PATH_LIST_OT_DeleteItem(bpy.types.Operator):
     """Delete the selected item from the list."""    
     bl_idname = "ldraw_path_list.delete_item"
-    bl_label = "Deletes an item"
+    bl_label = "Delete selected item"
     
     @classmethod
     def poll(cls, context): 
@@ -169,10 +169,10 @@ class LDRAW_PATH_LIST_OT_DeleteItem(bpy.types.Operator):
         return{'FINISHED'}
 
 class LDRAW_PATH_LIST_OT_MoveItem(bpy.types.Operator):
-    """Move an item in the list."""
-    
+    """Moves an item up or down in the list."""    
     bl_idname = "ldraw_path_list.move_item"
-    bl_label = "Move an item in the list"
+    bl_label = "Move selected item"
+
     direction: EnumProperty(items=(('UP', 'Up', ""), ('DOWN', 'Down', ""),)) # type: ignore
     
     @classmethod
@@ -180,8 +180,7 @@ class LDRAW_PATH_LIST_OT_MoveItem(bpy.types.Operator):
         return context.scene.ldraw_path_list
     
     def move_index(self):
-        """ Move index of an item render queue while clamping it. """
-         
+        """ Move index of an item render queue while clamping it. """  
         index = bpy.context.scene.ldraw_path_list_index
         list_length = len(bpy.context.scene.ldraw_path_list) - 1 # (index starts at 0)
         new_index = index + (-1 if self.direction == 'UP' else 1)
@@ -505,6 +504,7 @@ class PARTS_SUB_OPTIONS_PT_Panel(bpy.types.Panel):
         if scene.ldraw_path_list_index >= 0 and scene.ldraw_path_list:
             item = scene.ldraw_path_list[scene.ldraw_path_list_index]
             row = layout.row()
+            row.scale_y = 1.5
             row.prop(item, "name")
 
 
