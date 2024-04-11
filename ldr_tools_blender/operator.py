@@ -223,8 +223,8 @@ class ImportOperator(bpy.types.Operator, ImportHelper):
         items=[
             ("LinkedDuplicates", "Linked Duplicates",
              "Objects with linked mesh data blocks (Alt+D). Easy to edit."),
-            #('GeometryNodes', "Geometry Nodes",
-            # "Geometry node instances on an instancer mesh. Faster imports for large scenes but #harder to edit.")
+            ('GeometryNodes', "Geometry Nodes",
+             "Geometry node instances on an instancer mesh. Faster imports for large scenes but #harder to edit.")
         ],
         description="The method to use for instancing part meshes",
         # TODO: this doesn't set properly?

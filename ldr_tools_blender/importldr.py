@@ -39,7 +39,6 @@ def import_ldraw(
     settings.stud_type = match_stud(stud_type)
     settings.triangulate = False
     settings.add_gap_between_parts = add_gap_between_parts
-    settings.ground_object = ground_object
     settings.scene_scale = 1.0
     settings.unofficial_parts = unofficial_parts
     # Required for calculated normals.
@@ -49,11 +48,10 @@ def import_ldraw(
 
     # TODO: Add an option to make the lowest point have a height of 0 using obj.dimensions?
     if instance_type == 'GeometryNodes' and obj_name[1] != "":
-        import_instanced(filepath, ldraw_path,
-                         additional_paths, custom_mesh_path, color_by_code, settings)
+        import_instanced(filepath, ldraw_path, additional_paths, custom_mesh_path, color_by_code, settings, environment_settings, ground_object)
     elif instance_type == 'LinkedDuplicates' and obj_name[1] != "":
         import_objects(filepath, ldraw_path, additional_paths, custom_mesh_path,
-                       color_by_code, settings, environment_settings)
+                color_by_code, settings, environment_settings, ground_object)
     else:
         set_enviroment(
             environment_settings,
@@ -75,7 +73,7 @@ def match_primitive(primitive_resolution) -> any:
         case 'High': return ldr_tools_py.PrimitiveResolution.High
         case _: return ldr_tools_py.PrimitiveResolution.Normal
 
-def import_objects(filepath: str, ldraw_path: str, additional_paths: list[str], custom_mesh_path: str, color_by_code: dict[int, LDrawColor], settings: GeometrySettings, environment_settings: dict):
+def import_objects(filepath: str, ldraw_path: str, additional_paths: list[str], custom_mesh_path: str, color_by_code: dict[int, LDrawColor], settings: GeometrySettings, environment_settings: dict, ground_object: bool):
     # Create an object for each part in the scene.
     # This still uses instances the mesh data blocks for reduced memory usage.
     blender_mesh_cache = {}
@@ -95,20 +93,15 @@ def import_objects(filepath: str, ldraw_path: str, additional_paths: list[str], 
         (math.radians(-90.0), 0.0, 0.0), 'XYZ')
     root_obj.scale = (0.01, 0.01, 0.01)
 
-    if settings.ground_object:
+    if ground_object:
         bpy.context.view_layer.update()
         objectOnGround(root_obj.name)
     
     # Normalise object and child object scales to 1.0
-    applyScaleTransform(
-        root_obj.name
-    )
+    applyScaleTransform(root_obj.name)
 
     # check and set any environment properties 
-    set_enviroment(
-        environment_settings,
-        root_obj.name
-    )
+    set_enviroment( environment_settings,  root_obj.name)
 
 def objectOnGround(obj):
     bpy.ops.object.select_all(action='DESELECT')
@@ -178,7 +171,7 @@ def add_nodes(node: LDrawNode,
     return obj
 
 
-def import_instanced(filepath: str, ldraw_path: str, additional_paths: list[str], custom_mesh_path: str, color_by_code: dict[int, LDrawColor], settings: GeometrySettings):
+def import_instanced(filepath: str, ldraw_path: str, additional_paths: list[str], custom_mesh_path: str, color_by_code: dict[int, LDrawColor], settings: GeometrySettings, environment_settings: dict, ground_object: bool):
     # Instance each part on the points of a mesh.
     # This avoids overhead from object creation for large scenes.
     scene = ldr_tools_py.load_file_instanced_points(
@@ -200,6 +193,7 @@ def import_instanced(filepath: str, ldraw_path: str, additional_paths: list[str]
     root_obj.rotation_euler = mathutils.Euler(
         (math.radians(-90.0), 0.0, 0.0), 'XYZ')
     root_obj.scale = (0.01, 0.01, 0.01)
+
     bpy.context.collection.objects.link(root_obj)
 
     # Instant each unique colored part on the faces of a mesh.
@@ -222,12 +216,30 @@ def import_instanced(filepath: str, ldraw_path: str, additional_paths: list[str]
         # Hide the original instanced object to avoid cluttering the viewport.
         # Make sure the object is in the view layer before hiding.
         instance_object.hide_set(True)
-        instance_object.hide_render = False
+        instance_object.hide_render = True
 
         # Set up geometry nodes for the actual instancing.
         # Geometry nodes are more reliable than instancing on faces.
         # This also avoids performance overhead from object creation.
         create_geometry_node_instancing(instancer_object, instance_object)
+
+    if ground_object:
+        bpy.context.view_layer.update()
+        objectOnGround(root_obj.name)
+    
+    # Normalise object and child object scales to 1.0
+    applyScaleTransform(root_obj.name)
+
+    # check and set any environment properties 
+    set_enviroment( environment_settings,  root_obj.name)
+
+    # Clean-up: Remove temporary Bounding Box Geometry from instancer object modifiers
+    bpy.ops.object.select_all(action='DESELECT')
+    selectLDR(root_obj.name)
+    for obj in bpy.context.selected_objects:
+        geo_nodes = obj.modifiers["GeometryNodes"].node_group
+        remove_geometry_instancing_bbox(geo_nodes)
+    bpy.ops.object.select_all(action='DESELECT')
 
 def create_geometry_node_instancing(instancer_object: bpy.types.Object, instance_object: bpy.types.Object):
     modifier = instancer_object.modifiers.new(
@@ -244,13 +256,30 @@ def create_geometry_node_instancing(instancer_object: bpy.types.Object, instance
     group_output = nodes.new('NodeGroupOutput')
     node_tree.interface.new_socket(
         in_out='OUTPUT', socket_type='NodeSocketGeometry', name='Geometry')
+    
+    # Instancer bounding box geometry setup.
+    bbox_join = nodes.new(type="GeometryNodeJoinGeometry")
+    links.new(bbox_join.outputs["Geometry"],
+              group_output.inputs["Geometry"])
+    bbox_delete = nodes.new(type="GeometryNodeDeleteGeometry")
+    bbox_delete.mode = "EDGE_FACE"
+    links.new(bbox_delete.outputs["Geometry"],
+              bbox_join.inputs["Geometry"])
+    bbox_create = nodes.new(type="GeometryNodeBoundBox")
+    links.new(bbox_create.outputs["Bounding Box"],
+              bbox_delete.inputs["Geometry"])
+    bbox_realize = nodes.new(type="GeometryNodeRealizeInstances")
+    links.new(bbox_realize.outputs["Geometry"],
+              bbox_create.inputs["Geometry"])
 
     # The instancer mesh's points define the instance translation.
     instance_points = nodes.new(type="GeometryNodeInstanceOnPoints")
     links.new(group_input.outputs["Geometry"],
               instance_points.inputs["Points"])
     links.new(instance_points.outputs["Instances"],
-              group_output.inputs["Geometry"])
+              bbox_realize.inputs["Geometry"])
+    links.new(instance_points.outputs["Instances"],
+              bbox_join.inputs["Geometry"])
 
     # Set the instance mesh.
     instance_info = nodes.new(type="GeometryNodeObjectInfo")
@@ -265,20 +294,37 @@ def create_geometry_node_instancing(instancer_object: bpy.types.Object, instance
     links.new(scale_attribute.outputs["Attribute"],
               instance_points.inputs["Scale"])
 
-    # Rotate instances from the custom attributes.
+    # Rotate instances from the custom color attributes.
+    rotation = nodes.new(type="FunctionNodeRotateEuler")
+    rotation.type = 'AXIS_ANGLE'
+
     rot_axis = nodes.new(type="GeometryNodeInputNamedAttribute")
     rot_axis.data_type = 'FLOAT_VECTOR'
     rot_axis.inputs["Name"].default_value = "instance_rotation_axis"
+    links.new(rot_axis.outputs["Attribute"], rotation.inputs["Axis"])
 
     rot_angle = nodes.new(type="GeometryNodeInputNamedAttribute")
     rot_angle.data_type = 'FLOAT'
     rot_angle.inputs["Name"].default_value = "instance_rotation_angle"
 
-    rotation = nodes.new(type="FunctionNodeAxisAngleToRotation")
-    links.new(rot_axis.outputs["Attribute"], rotation.inputs["Axis"])
-    links.new(rot_angle.outputs["Attribute"], rotation.inputs["Angle"])
+    separate = nodes.new(type="ShaderNodeSeparateXYZ")
+    # The second output is the float attribute when selecting a different type.
+    links.new(rot_angle.outputs[1], separate.inputs["Vector"])
+    links.new(separate.outputs["X"], rotation.inputs["Angle"])
+
     links.new(rotation.outputs["Rotation"], instance_points.inputs["Rotation"])
 
+def remove_geometry_instancing_bbox(node_grp: bpy.types.NodeGroup):
+    if node_grp.type == "GEOMETRY":
+        list = ["Bounding Box", "Realize Instances", "Delete Geometry", "Join Geometry"]
+        for n in list:
+            if n in [node.name for node in node_grp.nodes]:
+                node = node_grp.nodes[n]
+                node_grp.nodes.remove(node)
+        # Re-establish link between IoP as GroupOutput
+        instance_points = node_grp.nodes["Instance on Points"]
+        group_output = node_grp.nodes["Group Output"]
+        node_grp.links.new(instance_points.outputs["Instances"],  group_output.inputs["Geometry"])
 
 def create_instancer_mesh(name: str, instances: ldr_tools_py.PointInstances):
     # Create a vertex at each instance.

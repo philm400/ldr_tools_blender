@@ -183,7 +183,6 @@ impl Default for PrimitiveResolution {
 pub struct GeometrySettings {
     pub triangulate: bool,
     pub add_gap_between_parts: bool,
-    pub ground_object: bool,
     // TODO: Create an enum for different stud types.
     pub stud_type: StudType,
     pub weld_vertices: bool, // TODO: default to true?
@@ -197,7 +196,6 @@ impl Default for GeometrySettings {
         Self {
             triangulate: Default::default(),
             add_gap_between_parts: Default::default(),
-            ground_object: Default::default(),
             stud_type: Default::default(),
             weld_vertices: Default::default(),
             primitive_resolution: Default::default(),

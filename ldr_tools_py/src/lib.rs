@@ -142,7 +142,6 @@ impl From<ldr_tools::LDrawColor> for LDrawColor {
 pub struct GeometrySettings {
     triangulate: bool,
     add_gap_between_parts: bool,
-    ground_object: bool,
     stud_type: StudType,
     primitive_resolution: PrimitiveResolution,
     weld_vertices: bool,
@@ -180,7 +179,6 @@ impl From<ldr_tools::GeometrySettings> for GeometrySettings {
         Self {
             triangulate: value.triangulate,
             add_gap_between_parts: value.add_gap_between_parts,
-            ground_object: value.ground_object,
             stud_type: value.stud_type.into(),
             primitive_resolution: value.primitive_resolution.into(),
             weld_vertices: value.weld_vertices,
@@ -194,7 +192,6 @@ impl From<&GeometrySettings> for ldr_tools::GeometrySettings {
         Self {
             triangulate: value.triangulate,
             add_gap_between_parts: value.add_gap_between_parts,
-            ground_object: value.ground_object,
             stud_type: value.stud_type.into(),
             weld_vertices: value.weld_vertices,
             primitive_resolution: value.primitive_resolution.into(),
