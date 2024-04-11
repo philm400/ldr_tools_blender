@@ -72,14 +72,19 @@ def get_material(color_by_code: dict[int, LDrawColor], code: int, is_slope: bool
             roughness_node.inputs['Max'].default_value = 0.2
 
             # TODO: Have a case for each finish type?
+            # Rubber - turn roughness right up
+            if ldraw_color.finish_name == 'Rubber':
+                roughness_node.inputs['Min'].default_value = 0.6
+                roughness_node.inputs['Max'].default_value = 0.8
+            # Metals   
             if ldraw_color.finish_name == 'MatteMetallic':
                 bsdf.inputs['Metallic'].default_value = 1.0
-            if ldraw_color.finish_name == 'Chrome':
+            elif ldraw_color.finish_name == 'Chrome':
                 # Glossy metal coating.
                 bsdf.inputs['Metallic'].default_value = 1.0
                 roughness_node.inputs['Min'].default_value = 0.075
                 roughness_node.inputs['Max'].default_value = 0.1
-            if ldraw_color.finish_name == 'Metal':
+            elif ldraw_color.finish_name == 'Metal':
                 # Rougher metals.
                 bsdf.inputs['Metallic'].default_value = 1.0
                 roughness_node.inputs['Min'].default_value = 0.15
