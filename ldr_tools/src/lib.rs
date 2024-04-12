@@ -86,8 +86,22 @@ impl DiskResolver {
         }
         // Users may want to specify additional folders for parts.
         for path in additional_paths {
-            base_paths.push(path.as_ref().to_owned());
+            let path = path.as_ref().to_owned();
+            base_paths.push(path.clone());
+            match resolution {
+                PrimitiveResolution::Low => {
+                    base_paths.push(path.join("p").join("8"));
+                },
+                PrimitiveResolution::High => {
+                    base_paths.push(path.join("p").join("48"));
+                },
+                PrimitiveResolution::Normal => ()
+            }
+            base_paths.push(path.join("p"));
+            base_paths.push(path.join("parts"));
+            base_paths.push(path.join("parts").join("s"));
         }
+        println!("{:#?}", base_paths);
 
         Self { base_paths }
     }
