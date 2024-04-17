@@ -554,6 +554,6 @@ class ENVIRONMENT_OPTIONS_PT_Panel(bpy.types.Panel):
         subrow.enabled = operator.add_ground_plane
         subrow.prop(operator, "solid_floor_bg")
 
-        subrow = col.row()
-        subrow.enabled = operator.add_ground_plane and operator.solid_floor_bg
-        subrow.prop(operator, "bg_color")
+        row = layout.row()
+        row.enabled = operator.add_ground_plane
+        row.prop(operator, "bg_color")

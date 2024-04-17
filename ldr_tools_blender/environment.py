@@ -32,10 +32,19 @@ def set_enviroment(
         add_camera(environment_settings, file_name)
 
 def add_plane(environment_settings):
-    bpy.ops.mesh.primitive_plane_add(location=(0, 0, 0))
+    bpy.ops.mesh.primitive_circle_add(
+        location=(0, 0, 0),
+        fill_type="NGON",
+        radius=200
+    )
     obj = bpy.context.active_object
-    # scale big enough to capture shadows for 99% of imports
-    obj.scale = (25,25,25)
+    material = bpy.data.materials.new(name="Ground Plane")
+    material.use_nodes = True
+    p_bsdf_node = material.node_tree.nodes["Principled BSDF"]
+    p_bsdf_node.inputs["Base Color"].default_value = environment_settings["bg_color"]
+    p_bsdf_node.inputs["Metallic"].default_value = 0.4
+    p_bsdf_node.inputs["Roughness"].default_value = 0.2
+    obj.data.materials.append(material)
     if environment_settings["transparent_bg"]:
         make_transparent(obj)
     if environment_settings["solid_floor_bg"]:
